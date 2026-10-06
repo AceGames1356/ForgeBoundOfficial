@@ -412,8 +412,7 @@ const WORLD2=[
 {n:'Sand Golem',k:'#d9b36a',w:'ice'},{n:'Dune Stalker',k:'#c9a23a',w:'shock'},{n:'Scarab Matriarch',k:'#4fb04a',w:'fire'},{n:'Mirage Wraith',k:'#b99cff',w:'void'},{n:'Cactus King',k:'#4d8a4a',w:'fire'},
 {n:'Thornback Boar',k:'#8a5a2b',w:'fire'},{n:'Elder Treant',k:'#3f7a3a',w:'fire'},{n:'Moss Hydra',k:'#6fbf5a',w:'shock'},{n:'Fae Queen',k:'#ff7ac8',w:'blood'},
 {n:'Frost Yeti',k:'#cfe6ff',w:'fire'},{n:'Ice Drake',k:'#7fd6ff',w:'shock'},{n:'Blizzard Witch',k:'#8fa8ff',w:'blood'},{n:'Glacier Titan',k:'#9fd8ff',w:'toxic'},
-{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},
-{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},
+{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},
 {n:'ViLocity',k:'#fff3b0',w:'holy'}];
 const R2=[20, 18, 19, 17, 18, 20, 20, 20, 19, 20, 20, 20, 20, 20, 20, 27, 28, 25, 26, 30, 20],AGPW=28;
 const W2HP=[60, 70, 85, 100, 120, 150, 190, 240, 300, 380, 470, 580, 720, 880, 1080, 1330, 1650, 2050, 2500, 3000, 6500],W2R=[7, 17, 21, 28, 29, 27, 36, 31, 30, 32, 39, 41, 36, 37, 47, 42, 43, 39, 50, 47, 34];
@@ -455,6 +454,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Game
 })(typeof window!=='undefined'?window:globalThis);
 </script>
 <script>
+const API_BASE='https://forgeboundgame-production.up.railway.app';
 const EC={fire:'#ff7a3d',ice:'#7fd6ff',shock:'#ffe14d',blood:'#e0345a',void:'#a66bff',toxic:'#7be04f',holy:'#ffffff',none:'#8a8f99'};
 const TC=['#63d99a','#4fd6d6','#5aa9e6','#b07cf0','#ffb347','#ff3b3b','#ffffff','#7fe8ff'];
 const {P,SB,TW,PRICE,BOSS_COIN,RN,BOSSES,WORLD2,PRICE2,MG_UNLOCK,VERSION,SLOTS,W1BASE,W2BASE,FX,GEM_PACKS,PATCH_NOTES}=Game;
@@ -463,24 +463,28 @@ const B=BOSSES;
 let GIFT=null,S,USER=null,STATE='',MODE='in',TOKEN=localStorage.getItem('fb:token')||'';
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function fresh(clears){return{owned:[0,6,13,18],eq:{h:0,b:6,g:13,c:18},boss:0,clears:clears||0,tb:0,coins:0,hpup:0,dia:0,world:1,b2:0,cl1:0,cl2:0,perm:[],ann:0,gain:0,gdia:0,hp:100,bhp:0,cd:false,log:[],scr:'forge',rew:[],tab:'b',last:null,rs:false,n:0}}
-async function api(p,b){const r=await fetch(p,{method:b===undefined?'GET':'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TOKEN},body:b===undefined?undefined:JSON.stringify(b)});const j=await r.json().catch(()=>null);if(!j)throw new Error('The game server is not reachable here. Accounts and co-op need server.js running.');if(!r.ok)throw new Error(j.error||'Request failed');return j}
+async function api(p,b){const r=await fetch(API_BASE+p,{method:b===undefined?'GET':'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TOKEN},body:b===undefined?undefined:JSON.stringify(b)});const j=await r.json().catch(()=>null);if(!j)throw new Error('The game server is not reachable here. Accounts and co-op need server.js running.');if(!r.ok)throw new Error(j.error||'Request failed');return j}
 const snapOld=()=>({owned:S.owned,eq:S.eq,boss:S.boss,clears:S.clears,coins:S.coins,hpup:S.hpup,dia:S.dia,world:S.world,b2:S.b2,cl1:S.cl1});
 function applySave(v){if(v&&v.owned&&v.eq){const sc=S.scr;S=Object.assign(fresh(),{owned:v.owned,eq:v.eq,boss:v.boss||0,clears:v.clears||0,tb:v.tb||0,coins:v.coins||0,hpup:v.hpup||0,dia:v.dia||0,world:v.world==2?2:1,b2:v.b2||0,cl1:v.cl1?1:0,perm:v.perm||[],ann:v.ann||0});S.scr=sc}}
 async function save(){if(!USER)return;const p=STATE;try{const j=await api('/api/save',snap());S.tb=j.save.tb||0;S.perm=j.save.perm||S.perm;STATE=''}catch(e){STATE='save failed'}if(STATE!==p)render()}
-async function connect(){if(TOKEN){try{const j=await api('/api/me');USER={u:j.user.username,name:j.user.name};(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null}catch(e){if(/log in/i.test(e.message)){TOKEN='';localStorage.removeItem('fb:token')}}}render();if(GIFT)showGift(GIFT)}
+async function connect(){loadNews();
+if(TOKEN){try{const j=await api('/api/me');setUser(j);(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null;S.dailyReady=!!j.dailyReady}catch(e){if(/log in/i.test(e.message)){TOKEN='';localStorage.removeItem('fb:token')}}}
+const q=new URLSearchParams(location.search);if(q.get('paid')){history.replaceState(null,'',location.pathname);if(q.get('paid')=='1'&&USER){toast('Payment received. Adding your gems…');let n=0;const t=setInterval(async()=>{n++;try{const j=await api('/api/me');if(j.save.gems>S.gems){S.gems=j.save.gems;clearInterval(t);toast('Gems added!');sfx.gift();render()}}catch(e){}if(n>8)clearInterval(t)},2500)}}
+render();if(GIFT)showGift(GIFT);else if(USER&&USER.needsInfo&&!sessionStorage.getItem('fb:skipinfo'))openProfile()}
 function openM(){drawM()}
 function closeM(){document.getElementById('modal').innerHTML=''}
 function setMode(m){MODE=m;drawM()}
-function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label><label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key=='Enter')submit()"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
+function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label>${MODE=='new'?'<label>Email<input id="f-e" type="email" maxlength="120" autocomplete="email"></label><label>Date of birth<input id="f-d" type="date"></label>':''}<label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key==\'Enter\')submit()"></label>${MODE=='new'?'<p class="fine">We use your email to verify your account and your age to keep younger players safe. Co-op needs age 8+. Friends, chat and buying need age 13+.</p>':''}<div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
 async function submit(){const E=m=>{document.getElementById('err').textContent=m},g=id=>document.getElementById(id);
-const u=g('f-u').value.trim().toLowerCase(),pw=g('f-p').value,n=MODE=='new'?g('f-n').value.trim():'';
+const u=g('f-u').value.trim().toLowerCase(),pw=g('f-p').value,n=MODE=='new'?g('f-n').value.trim():'',em=MODE=='new'?g('f-e').value.trim():'',dob=MODE=='new'?g('f-d').value:'';
 if(MODE=='new'&&!n)return E('Enter your name.');
 if(!/^[a-z0-9_]{3,16}$/.test(u))return E('Username: 3 to 16 letters, numbers or underscores.');
+if(MODE=='new'&&u!=='vilocity'){if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em))return E('Enter a valid email address.');if(!dob)return E('Enter your date of birth.')}
 if(pw.length<6)return E('Password needs at least 6 characters.');
-E('One moment…');
-try{const j=await api(MODE=='new'?'/api/signup':'/api/login',{username:u,password:pw,name:n,save:MODE=='new'?snap():undefined});
-TOKEN=j.token;localStorage.setItem('fb:token',TOKEN);USER={u:j.user.username,name:j.user.name};(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null}catch(e){return E(e.message)}
-closeM();render();if(GIFT)showGift(GIFT)}
+E('One moment…');let j;
+try{j=await api(MODE=='new'?'/api/signup':'/api/login',{username:u,password:pw,name:n,email:em,dob,save:MODE=='new'?snap():undefined});afterAuth(j)}catch(e){return E(e.message)}
+closeM();render();
+if(MODE=='new'&&!USER.verified)openVerify(j.devCode,j.mailSent);else if(GIFT)showGift(GIFT);else if(USER.needsInfo)openProfile()}
 function out(){api('/api/logout',{}).catch(()=>{});TOKEN='';localStorage.removeItem('fb:token');closeRoom();USER=null;S=fresh();S.scr='home';render()}
 function st(){let o={atk:0,spd:1,def:0,crit:0,life:0,e:'none'};
 for(const k in S.eq){const p=P[S.eq[k]];o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
@@ -542,7 +546,6 @@ function cb(){if(S.world==2){if(S.b2>=WORLD2.length)return null;return Object.as
 const bsprOld=(b,sz)=>b.w2?sprG(w2g(b.i),sz,b.n):spr(b.i,sz);
 const bcoinOld=b=>b.w2?b.coin:BOSS_COIN[b.i];
 function desc(p){const a=[];if(p.atk)a.push('ATK '+(p.atk>0?'+':'')+p.atk);if(p.spd)a.push('SPD '+(p.spd>0?'+':'')+p.spd);if(p.def)a.push('DEF '+(p.def>0?'+':'')+p.def);if(p.crit)a.push('Crit '+Math.round(p.crit*100)+'%');if(p.life)a.push('Lifesteal '+Math.round(p.life*100)+'%');if(p.e&&p.e!='none')a.push(p.e);return RN[p.t]+(p.wd?' (W2)':p.an?' (Anniversary)':'')+'. '+(a.join(', ')||'No bonus')}
-function eq(id){sfx.equip();S.eq[P[id].s]=id;save();render()}
 function tab(k){S.tab=k;render()}
 function start(){const b=cb();if(!b)return;stopAg();S.bhp=b.hp;S.hp=MX();S.log=['The '+b.n+' stirs.'];S.scr='fight';S.cd=false;S.fx=0;S.last=null;S.over=0;if(b.aggr)startAg(b);render()}
 function atk(){if(S.cd||S.over)return;const s=st(),b=cb();let d=s.atk*(.85+Math.random()*.3),t=[];
@@ -561,29 +564,12 @@ S.agT=setTimeout(()=>{if(S.scr!='fight'||!S.ag||S.over)return;agHit(b);if(S.scr=
 function agHit(b){const s=st(),g=Date.now()<S.ag.guard,dm=Math.max(1,Math.round(Game.recoil(b.aggr.pw,s.def,b.fl)*(g?.3:1)));S.hp-=dm;
 S.log.unshift(g?`You guard ${b.n}'s attack and take ${dm}.`:`${b.n} strikes you for ${dm}!`);(g?sfx.block:sfx.hurt)();if(S.hp<=0){S.hp=0;fupd();loseFight(b)}else fupd()}
 function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.now()+900;S.ag.gcd=Date.now()+1700;sfx.guard();fupd();setTimeout(fupd,1750)}
-function fupd(){if(S.scr!='fight')return;const b=cb(),$=id=>document.getElementById(id);if(!$('fbf'))return;
-$('fbf').style.width=S.bhp/b.hp*100+'%';$('fbt').textContent=`${S.bhp}/${b.hp} HP. Weak to ${b.w}.`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'%';
-$('fpt').textContent=`You: ${Math.max(0,S.hp)}/${MX()}. Each swing costs you ${Game.recoil(b.r,st().def,b.fl)} HP.`;
-const ag=S.ag;$('fboss').classList.toggle('tele',!!(ag&&ag.tele));$('tele').textContent=ag&&ag.tele?b.n+' is winding up! GUARD!':'';
-const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'Guard…':'Guard'}
-document.querySelector('.log').innerHTML=S.log.slice(0,8).map(l=>'<div>'+l+'</div>').join('')}
-function win(){const b=cb();sfx.win();stopAg();S.gain=bcoin(b);S.coins+=S.gain;S.gdia=b.w2?b.dia:0;S.dia+=S.gdia;
-S.rew=(b.w2?Game.dropPool2(b.i,S.owned):Game.dropPool(b.i,S.owned)).map(id=>P[id]);save();setTimeout(()=>sfx.reveal(S.rew.reduce((m,p)=>Math.max(m,p.t),0)),500);S.scr='reward';render()}
-function advance(){if(S.world==2){S.b2++;if(S.b2>=WORLD2.length){S.cl2=(S.cl2|0)+1;S.clears++;S.scr='end2';save();render();return}}
-else{S.boss++;if(S.boss>=B.length){S.cl1=1;S.world=2;S.b2=0;S.scr='cut';save();render();return}}S.scr='forge';save();render()}
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
 function skip(){advance()}
 function reset(){if(!S.rs){S.rs=true;render();return}doReset()}
-async function doReset(){const perm=S.perm||[],cl=S.clears,tb=S.tb,ann=S.ann;S=fresh(cl);S.perm=perm;S.tb=tb;S.ann=ann;S.owned=[...new Set([0,6,13,18,...perm])];S.scr='forge';
-if(USER){try{const j=await api('/api/save',{reset:1});applySave(j.save)}catch(e){STATE='save failed'}}render()}
 function bar(v,m,c){return `<div class="bar"><i style="width:${Math.max(0,v/m*100)}%;background:${c}"></i></div>`}
-function head(){const ic='<svg viewBox="0 0 8 8" width="22" height="22" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" width="2" height="1"/><rect x="2" y="1" width="4" height="2"/><rect x="3" y="3" width="2" height="1"/><rect x="1" y="4" width="6" height="1"/><rect y="5" width="8" height="3"/></svg>';
-const rs=S.scr=='forge'?`<button onclick="reset()">${S.rs?'Confirm: erase run':'New run'}</button>`:'',mn=['forge','shop','settings','lobby','map','minis'].includes(S.scr)?`<button onclick="S.scr='home';render()">Menu</button>`:'',cn=`<span class="nm"><span class="coin"></span><b>${S.coins||0}</b></span>${S.cl1?`<span class="nm"><span class="dia"></span><b>${S.dia||0}</b></span>`:''}`;
-const w=USER?`${cn}<span class="nm"><b>${esc(USER.name)}</b> ${STATE||'saved'}</span>${mn}${rs}<button onclick="out()">Log out</button><span class="av" aria-hidden="true">${esc(USER.name[0]||'?').toUpperCase()}</span>`:`${cn}<span class="nm">Guest: not saved</span>${mn}${rs}<button class="ib" onclick="openM()" aria-label="Log in or create account" title="Log in or create account">${ic}</button>`;
-return `<header>${S.scr=='home'?'<span></span>':'<h1>Forgebound</h1>'}<div class="who">${w}</div></header>`}
 const MXold=()=>Game.maxHp(S.hpup||0);
 let CF={snd:1,vol:'med',anim:1,theme:'auto',pal:'aurora'};try{Object.assign(CF,JSON.parse(localStorage.getItem('fb:set')||'{}'))}catch(e){}
-function applySet(){const r=document.documentElement;if(CF.theme=='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',CF.theme);r.classList.toggle('noanim',!CF.anim)}
 function setOpt(k,v){CF[k]=v;try{localStorage.setItem('fb:set',JSON.stringify(CF))}catch(e){}applySet();if(k=='snd'&&v)sfx.buy();if(k=='vol')sfx.coin();render()}
 let AC=null;const VOL={low:.5,med:1,high:1.8};
 function ac(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();return AC}
@@ -596,7 +582,7 @@ swing:()=>noise(.14,500,2400,.09),hit:()=>{beep(150,.14,'sine',.12,55);noise(.08
 hurt:()=>{beep(110,.2,'sawtooth',.05,60);noise(.1,400,150,.05)},heal:()=>beep(440,.2,'sine',.06,880),
 coin:()=>{beep(988,.06,'square',.04);beep(1319,.16,'square',.04,0,.06)},buy:()=>{beep(660,.08,'square',.04);beep(990,.12,'square',.04,0,.07);beep(1320,.16,'square',.03,0,.14)},
 deny:()=>{beep(160,.16,'sawtooth',.05);beep(120,.2,'sawtooth',.05,0,.12)},win:()=>{arp([392,523,659,784,1047],.2,'square',.05,.11);setTimeout(sfx.coin,650)},
-lose:()=>{arp([392,330,262,196],.25,'sawtooth',.04,.16)},join:()=>{beep(600,.07,'square',.04);beep(900,.1,'square',.04,0,.07)},
+lose:()=>{arp([392,330,262,196],.25,'sawtooth',.04,.16)},join:()=>{beep(600,.07,'square',.04);beep(900,.1,.square',.04,0,.07)},
 start:()=>{beep(220,.35,'sawtooth',.05,440);beep(330,.35,'square',.03,660)},clear:()=>{arp([523,659,784,1047],.16,'square',.05,.08);setTimeout(sfx.coin,400)},
 pick:t=>{if(t>=6)arp([784,1047,1319,1568,2093],.4,'sine',.06,.06);else if(t>=5){beep(80,.5,'sawtooth',.08,50);arp([392,494,587],.3,'square',.04,.09)}else if(t>=3)arp([523,659,784],.16,'square',.04,.07);else sfx.buy()},
 reveal:t=>{if(t>=6){arp([1047,1319,1568,2093,2637],.5,'sine',.05,.08)}else if(t>=5){beep(70,.6,'sawtooth',.09,45);noise(.5,200,80,.07)}else if(t>=3)arp([659,784,988],.14,'square',.035,.07);else beep(660,.08,'square',.03)},
@@ -621,26 +607,7 @@ const cdefOld=()=>{const c=AD.cust;return{s:c.s,n:c.n.trim(),t:+c.t,c:c.c,atk:+c
 function prevH(){const d=cdef();d.id=9999;d.n=d.n||'Preview';return ico(Game.addCustom(d))}
 function cf(k,v){AD.cust[k]=v;const e=document.getElementById('cprev');if(e)e.innerHTML=prevH()}
 function adTab(k){AD.tab=k;render()}
-function adminH(){const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;let b;
-if(AD.tab=='give'){b=`<div class="tabs">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs">${[['all','All'],['1','World 1'],['2','World 2'],['an','Anniversary']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><div class="parts">`+P.filter(p=>!p.cu&&p.s==AD.fs&&admW(p)).sort((a,b)=>a.t-b.t).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="admGive(${p.id})">${ico(p)}<span>${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div>`}
-else if(AD.tab=='custom'){const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
-b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.map((n,i)=>`<option value="${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+
-(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+
-(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+
-(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+
-`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit chance (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`}
-else if(AD.tab=='coins')b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go" onclick="admCoins()">Give coins</button><button class="go" onclick="admDia()">Give diamonds</button></div>`;
-else b=`<p>Unlock World 2 for this player, as if they had beaten The Final God.</p><button class="go" onclick="admWorld()">Unlock World 2</button><button class="go" style="margin-top:8px" onclick="admAnn()">Give anniversary gift</button>`;
-return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs">${[['give','Give a piece'],['custom','Custom item'],['coins','Coins & diamonds'],['prog','Progress']].map(([k,n])=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${n}</button>`).join('')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='home';render()">Back to menu</button></div>`}
-function homeH(){const ann=Game.annYear(Date.now());return `<div class="home"><div class="ttl">FORGE<br>BOUND</div><p>Forge a weapon. Defeat the bosses. Cross two worlds.</p>${ann?`<div class="ann">Anniversary event! Free gifts that stay forever. ${USER?'They are added when you log in.':'Log in to claim them.'}</div>`:''}<div class="hero">${svg(null,'0 0 32 66',96,198)}</div><button class="go" onclick="S.scr='forge';render()">Play</button><button onclick="S.scr='map';render()">Boss map</button><button onclick="S.scr='lobby';S.sub='menu';render()">Co-op Tower</button><button onclick="S.scr='settings';render()">Settings</button>${USER&&USER.u==='vilocity'?'<button onclick="openAdmin()">Admin panel</button>':''}</div>`}
 function opt(k,label,vals){return `<div class="orow"><span>${label}</span><div class="tabs">${vals.map(([v,n])=>`<button class="${CF[k]==v?'on':''}" onclick="setOpt('${k}',${JSON.stringify(v).replace(/"/g,"'")})">${n}</button>`).join('')}</div></div>`}
-function settingsH(){return `<div class="box" style="max-width:480px;margin:0 auto"><h2>Settings</h2>${opt('snd','Sound effects',[[1,'On'],[0,'Off']])}${opt('vol','Volume',[['low','Low'],['med','Medium'],['high','High']])}${opt('anim','Animations',[[1,'On'],[0,'Off']])}${opt('theme','Theme',[['auto','Auto'],['dark','Dark'],['light','Light']])}<button style="margin-top:10px;width:100%;text-align:center" onclick="S.scr='home';render()">Back</button></div>`}
-function buy(id){const p=P[id];if(S.owned.includes(id)||p.cu||p.an)return;const d=!!p.wd,pr=d?PRICE2[p.t]:PRICE[p.t];if(pr==null)return;if((d?S.dia:S.coins)<pr){sfx.deny();return}if(d)S.dia-=pr;else S.coins-=pr;S.owned.push(id);sfx.buy();save();render()}
-function buyHp(){const l=S.hpup||0;if(l<5){const c=Game.hpCost(l);if(S.coins<c){sfx.deny();return}S.coins-=c}else{const c=Game.hpCostD(l);if(c==null||S.dia<c){sfx.deny();return}S.dia-=c}S.hpup=l+1;sfx.buy();save();render()}
-function stab(k){S.st=k;render()}function scur(k){S.shopc=k;S.st='all';render()}
-function shopH(){const dm=S.shopc=='d'&&S.cl1,f=S.st||'all',l=S.hpup||0,items=P.filter(p=>!p.cu&&!p.an&&!!p.wd==dm&&p.t<6&&!S.owned.includes(p.id)&&(f=='all'||p.s==f)).sort((a,b)=>a.t-b.t||a.s.localeCompare(b.s));
-const vc=l<5?Game.hpCost(l):Game.hpCostD(l),show=dm?(l>=5&&l<10):l<5,have=dm?S.dia:S.coins;
-return `<div class="box"><h2>Shop</h2><p>You have <b>${S.coins||0}</b> coins${S.cl1?` and <b>${S.dia||0}</b> diamonds`:''}. God rarity parts are never for sale: beat the most powerful bosses to earn them.</p>${S.cl1?`<div class="tabs">${[['c','Coin shop'],['d','Diamond shop']].map(([k,n])=>`<button class="${(dm?'d':'c')==k?'on':''}" onclick="scur('${k}')">${n}</button>`).join('')}</div>`:''}<div class="tabs">${[['all','All'],['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${f==k?'on':''}" onclick="stab('${k}')">${n}</button>`).join('')}</div><div class="parts">${show?`<button class="part" style="--tc:var(--good)" ${have<vc?'disabled':''} onclick="buyHp()"><span>Vitality ${l}/10<small>+${l<5?10:15} max HP. ${vc} ${dm?'diamonds':'coins'}</small></span></button>`:''}`+items.map(p=>{const pr=dm?PRICE2[p.t]:PRICE[p.t];return `<button class="part" style="--tc:${TC[p.t]}" ${have<pr?'disabled':''} onclick="buy(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}. ${pr} ${dm?'diamonds':'coins'}</small></span></button>`}).join('')+`</div>${items.length?'':'<p>Nothing left to buy here.</p>'}<button style="width:100%;text-align:center" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 
 /* ---------- World 2: map, cutscene, minigames, gifts ---------- */
 let MAPIMG=null;
@@ -690,14 +657,6 @@ CUTT.push(setTimeout(()=>{z.style.transition='transform 9s steps(36)';z.style.tr
 L.forEach(([t,x])=>CUTT.push(setTimeout(()=>{c.textContent=x;sfx.cutline()},t)));CUTT.push(setTimeout(()=>{go.style.display='';sfx.reveal(6)},9400))}
 function cutDone(){CUTT.forEach(clearTimeout);CUTT=[];S.scr='forge';render()}
 function end2H(){return `<div class="box" style="max-width:560px;margin:0 auto"><h2>ViLocity is defeated!</h2><p>The Shattered Lands are free. You conquered both worlds (clears: ${S.clears}).</p><div class="hero">${bspr({w2:1,i:20,n:'ViLocity'},96)}</div><p>Keep playing: minigames still earn diamonds and the shops are open. Or press New run in the forge to start over.</p><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
-function forgeBoxH(){const b=cb(),btn=(f,t)=>`<button onclick="${f}" style="width:100%;margin-top:10px;text-align:center">${t}</button>`;let h='<div class="box">';
-if(b)h+=`<h2><span style="vertical-align:middle">${bspr(b,40)}</span> ${S.world==2?'World 2: ':''}Next boss: ${b.n}</h2><p>${b.hp} HP. Recoil ${b.r} per swing, minus your defense. Weak to ${b.w}.${b.aggr?' He fights back: press Guard when he winds up!':''}</p><button class="go" onclick="start()">Fight ${b.n}</button>`;
-else h+='<h2>World 2 conquered</h2><p>ViLocity is defeated. Free roam: play minigames, shop, or start a new run.</p>';
-h+=btn("S.scr='map';render()",'Boss map');if(S.world==2)h+=btn("S.scr='minis';render()",'Minigames');
-return h+btn("S.scr='lobby';S.sub='menu';render()",`Co-op Tower (best floor ${S.tb||0})`)+btn("S.scr='shop';render()",'Shop')+'</div>'}
-function fightH(){const s=st(),b=cb(),rec=Game.recoil(b.r,s.def,b.fl),L=S.last,fx=S.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),ag=S.ag,tele=ag&&ag.tele,gOn=ag&&Date.now()<ag.gcd;
-return `<div class="box arena" style="max-width:520px;margin:0 auto"><div class="sw ${fx?'go':''}" style="${aura()}">${svg(null,'0 0 32 66',63,130)}</div>${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''} ${tele?'tele':''}" id="fboss" style="--bk:${b.k}">${bspr(b,112)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div><h2>${b.n}</h2><p id="tele" class="telep">${tele?b.n+' is winding up! GUARD!':''}</p><div class="bar"><i id="fbf" style="width:${S.bhp/b.hp*100}%;background:linear-gradient(90deg,var(--bad),var(--acc2))"></i></div><p id="fbt">${S.bhp}/${b.hp} HP. Weak to ${b.w}.</p><div class="bar${fx?' rc':''}"><i id="fpf" style="width:${Math.max(0,S.hp)/MX()*100}%;background:var(--good)"></i></div><p id="fpt">You: ${Math.max(0,S.hp)}/${MX()}. Each swing costs you ${rec} HP.</p><div class="btnrow"><button class="go swing" onclick="atk()" ${S.cd?'disabled':''}>${S.cd?'Recovering…':'Swing'}</button>${b.aggr?`<button id="gbtn" class="guard" onclick="guard()" ${gOn?'disabled':''}>${gOn?'Guard…':'Guard'}</button>`:''}</div><div class="log">${S.log.slice(0,8).map(l=>'<div>'+l+'</div>').join('')}</div></div>`}
-function rewardH(){const b=cb();return `<div class="box"><h2>${b.n} defeated.</h2><p>+${S.gain} coins${S.gdia?` and +${S.gdia} diamonds`:''} (you have ${S.coins} coins${S.cl1?` and ${S.dia} diamonds`:''}). Choose one part for your forge.</p><div class="parts">`+S.rew.map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="take(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button onclick="skip()">Skip reward</button></div>`}
 function showGift(g){GIFT=null;sfx.gift();const ps=(g.parts||[]).map(id=>P[id]).filter(Boolean);document.getElementById('modal').innerHTML=`<div class="ov"><div class="dlg" role="dialog" aria-modal="true" aria-label="Anniversary gift"><h2>Happy Anniversary!</h2><p>Thanks for playing Forgebound. Your gift: <b>${g.coins}</b> coins and <b>${g.dia}</b> diamonds, plus these parts that stay with you forever, even after New run.</p><div class="parts" style="grid-template-columns:1fr">${ps.map(p=>`<div class="part" style="--tc:${TC[p.t]}">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></div>`).join('')}</div><button class="go" onclick="closeM()">Awesome</button></div></div>`}
 /* top-down minigames */
 const TL=24,GW=15,GH=13;
@@ -761,68 +720,6 @@ if(s.hp<=0)return{win:0,dia:Math.floor(s.k/2),txt:'The slimes got you.'};if(s.k>
 draw(cx){drawFloor(cx,Wg);sl.forEach(e=>dS(cx,'slime',e.x,e.y,3));if(!(p.inv&&Math.floor(p.inv*10)%2))dS(cx,'hero',p.x,p.y,3);
 if(p.sw>0){cx.fillStyle='#fff';for(let a=-1;a<=1;a++){const px=p.x+p.fx*26+(-p.fy)*a*10,py=p.y+p.fy*26+p.fx*a*10;cx.fillRect(Math.round(px)-3,Math.round(py)-3,6,6)}}},
 hud(){return `Hearts ${s.hp}   Slimes ${s.k}/15   Time ${Math.max(0,Math.ceil(s.t))}`}}}};
-function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}const a=document.getElementById('app'),s=st();let h=head();
-if(S.scr=='home'){h+=homeH()}else if(S.scr=='map'){h+=mapH()}else if(S.scr=='cut'){h+=cutH()}else if(S.scr=='minis'){h+=minisH()}else if(S.scr=='mini'){h+=miniH()}else if(S.scr=='minires'){h+=minresH()}else if(S.scr=='end2'){h+=end2H()}else if(S.scr=='admin'){h+=adminH()}else if(S.scr=='settings'){h+=settingsH()}else if(S.scr=='shop'){h+=shopH()}else if(S.scr=='forge'){
-h+=`<div class="grid"><div><div class="stage" style="--glow:${EC[s.e]}">${svg()}</div><div class="stats"><div class="stat"><span>Attack</span>${s.atk}</div><div class="stat"><span>Speed</span>${s.spd.toFixed(1)}</div><div class="stat"><span>Defense</span>${s.def}</div><div class="stat"><span>Crit</span>${Math.round(s.crit*100)}%</div><div class="stat"><span>Element</span>${s.e}</div><div class="stat"><span>Clears</span>${S.clears}</div></div></div><div>
-<div class="tabs">${Object.keys(SL).map(k=>`<button class="${S.tab==k?'on':''}" onclick="tab('${k}')">${SL[k]}</button>`).join('')}</div>
-<div class="parts">${P.filter(p=>p.s==S.tab&&S.owned.includes(p.id)).map(p=>`<button class="part ${S.eq[S.tab]==p.id?'on':''}" style="--tc:${TC[p.t]}" onclick="eq(${p.id})">${ico(p)}<span>${p.n}<small>${desc(p)}</small></span></button>`).join('')}</div>
-${forgeBoxH()}</div></div>`}
-else if(S.scr=='fight'){h+=fightH()}
-else if(S.scr=='lobby'){h+=lobbyH()}else if(S.scr=='wait'){h+=waitH()}else if(S.scr=='tower'){h+=towerH()}else if(S.scr=='trew'){h+=trewH()}else if(S.scr=='tover'){h+=toverH()}else if(S.scr=='over'){h+=`<div class="box" style="max-width:520px;margin:0 auto"><h2>Recoil beat you.</h2><p>You earned ${S.gain} coins${S.gdia?` and ${S.gdia} diamonds`:''} for the damage you dealt. Spend them in the shop on better parts or Vitality, then fight again.</p><button style="width:100%;margin-bottom:8px;text-align:center" onclick="S.scr='shop';render()">Open shop</button><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
-else{h+=rewardH()}
-a.innerHTML=h;if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap()}
-
-/* co-op tower (server-driven) */
-let T=null,R=null,ES=null;
-const NOLOGIN='Log in or create an account first. Co-op uses your account so the server knows your weapon.';
-const me=()=>R&&R.players.find(p=>p.u===USER.u)||{hp:100,dead:0,dealt:0,nm:'',eq:S.eq};
-const view=()=>{const m=me();return[m,...R.players.filter(p=>p.u!==USER.u)]};
-function sub(x){S.sub=x;render()}function pick(n){S.pick=n;render()}
-function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back to forge':'Back'}</button>`;let b;
-if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
-else if(sb=='menu')b=`<p>Climb a tower with friends. Tower bosses are their own, and they hit harder and have more health the more players you bring. Every 5th floor has a special boss.</p><button class="go" onclick="sub('create')">Create room</button><button style="margin-top:8px;width:100%;text-align:center" onclick="sub('join')">Join room</button>`;
-else if(sb=='create'){const pk=S.pick||2;b=`<p>Choose the maximum number of players. You will wait in a room until you start the tower.</p><div class="tabs">${[2,3,4].map(n=>`<button class="${pk==n?'on':''}" onclick="pick(${n})">${n} players</button>`).join('')}</div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="createRoom()">Create room</button>`}
-else b=`<p>Enter the room code your friend shared.</p><div class="dlg" style="box-shadow:none;border:0!important;padding:0;max-width:none"><label>Room code<input id="rc" maxlength="12"></label></div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="joinRoom()">Join room</button>`;
-return `<div class="box" style="max-width:480px;margin:0 auto"><h2>Co-op Tower</h2>${b}${bk}</div>`}
-const LE=m=>{const e=document.getElementById('lerr');if(e)e.textContent=m};
-async function createRoom(){LE('Creating…');try{await save();const j=await api('/api/room/create',{cap:S.pick||2});openRoom(j.code)}catch(e){LE(e.message)}}
-async function joinRoom(){const code=document.getElementById('rc').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');if(code.length<3)return LE('Room code: 3 to 12 letters or numbers.');
-LE('Joining…');try{await save();const j=await api('/api/room/join',{code});openRoom(j.code)}catch(e){LE(e.message)}}
-function closeRoom(){if(ES)ES.close();ES=null;R=null;T=null}
-function openRoom(code){closeRoom();T={cd:0,fx:0,last:null,seq:-1,sig:'',hold:0};
-ES=new EventSource(`/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
-ES.onerror=()=>{if(ES&&ES.readyState==2){closeRoom();S.scr='lobby';S.sub='menu';render()}}}
-const PH={wait:'wait',fight:'tower',reward:'trew',over:'tover'};
-function onRoom(){if(!T||T.hold)return;(R.cu||[]).forEach(Game.addCustom);const ph=PH[R.phase],sig=R.phase+R.floor+R.players.map(p=>p.u).join(),ev=R.ev,isNew=ev&&ev.seq>T.seq;S.tb=Math.max(S.tb||0,R.best);if(R.coins!=null)S.coins=R.coins;
-if(S.scr=='tower'&&ph!='tower'&&isNew){T.seq=ev.seq;T.hold=1;animate(ev);setTimeout(()=>{T.hold=0;if(T)onRoom()},950);return}
-if(S.scr!=ph||sig!==T.sig){const first=T.seq<0;T.sig=sig;sfx[{wait:'join',tower:'start',trew:'clear',tover:'lose'}[ph]]();S.scr=ph;T.cd=0;T.fx=0;T.last=null;if(ev)T.seq=ev.seq;render();return}
-if(isNew){T.seq=ev.seq;animate(ev);if(ev.by===USER.u)return}
-tupd()}
-function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx=1;T.cd=1;render();T.fx=0;setTimeout(()=>{if(T){T.cd=0;if(S.scr=='tower')render()}},Math.max(650,1000/st().spd));return}
-const v=view(),k=v.findIndex(p=>p.u===ev.by);if(k>0)rswing(k,v[k])}
-function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
-const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
-const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
-function teamH(){return view().map(p=>`<div class="tm ${p.dead||p.off?'dn':''}"><span>${esc(p.nm)}${p.u===USER.u?' (you)':''}</span><span>${p.off?'offline':p.dead?'down':p.hp+' HP'}</span><span>dealt ${p.dealt}</span></div>`).join('')}
-function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';
-document.getElementById('btxt').textContent=`${R.bossHp}/${R.bossMax} HP. Weak to ${R.boss.w}. Recoil ${Game.recoil(R.boss.r,st().def)} per swing.`;
-document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=m.hp/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`You: ${m.hp}/${m.mx||100}`;
-view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
-function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
-const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
-const act=isH?`<button class="go" onclick="startTower()" ${ps.length<2?'disabled':''}>${ps.length<2?'Need 2 players to start':'Start tower'}</button>`:`<p>Waiting for the host to start the tower.</p>`;
-return `<div class="box" style="max-width:560px;margin:0 auto"><h2>Waiting room</h2><p>Room code: <b>${esc(R.code)}</b>. Friends choose Join room and enter it. Players: ${ps.length}/${R.cap}</p><div class="wsg">${sl}</div><div id="lerr" class="err"></div>${act}<button style="margin-top:8px;width:100%;text-align:center" onclick="tleave()">Leave room</button></div>`}
-function startTower(){api('/api/room/start',{}).catch(e=>LE(e.message))}
-function tatk(){if(!T||T.cd||R.phase!='fight'||me().dead)return;T.cd=1;const b=document.querySelector('.arena .go');if(b){b.disabled=true;b.textContent='Recovering…'}
-api('/api/room/swing',{}).catch(()=>{T.cd=0;render()})}
-const SLOT=['left:calc(50% - 150px);top:0;--d:1','left:calc(50% + 86px);top:0;--d:-1','left:calc(50% - 150px);top:145px;--d:1','left:calc(50% + 86px);top:145px;--d:-1'];
-function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl${k}" style="${SLOT[k]}"><div class="tsw ${fx&&k==0?'go':''}" id="tsw${k}" style="${k==0?aura():''}">${svg(p.eq,'0 0 32 66',50,104)}</div><div class="tag">${esc(p.nm)}</div></div>`}
-function towerH(){const s=st(),b=R.boss,L=T.last,fx=T.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),m=me(),rec=Game.recoil(b.r,s.def);
-return `<div class="box arena" style="max-width:560px;margin:0 auto"><div class="tstage" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div><h2>Floor ${R.floor}: ${b.n}${b.sp?' (special boss)':''}</h2><div class="bar"><i id="bfill" style="width:${R.bossHp/R.bossMax*100}%;background:linear-gradient(90deg,var(--bad),var(--acc2))"></i></div><p id="btxt">${R.bossHp}/${R.bossMax} HP. Weak to ${b.w}. Recoil ${rec} per swing.</p><div class="bar${fx?' rc':''}"><i id="myhp" style="width:${m.hp/(m.mx||100)*100}%;background:var(--good)"></i></div><p id="myhpt">You: ${m.hp}/${m.mx||100}</p>${m.dead?'<p>You are down. A teammate must clear the floor to revive you.</p>':''}<button class="go swing" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${m.dead?'Down':T.cd?'Recovering…':'Swing'}</button><p style="margin-top:10px">Room code: <b>${esc(R.code)}</b></p><div id="team" class="team">${teamH()}</div><button onclick="tleave()" style="margin-top:10px">Leave tower</button></div>`}
-function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
-function ttake(id){api('/api/room/reward',{id}).then(j=>{S.owned=j.owned}).catch(()=>{})}
-function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
-function tleave(){api('/api/room/leave',{}).catch(()=>{});closeRoom();S.scr='forge';render()}
 
 /* ================= v3 layer (overrides earlier definitions) ================= */
 const IC={forge:["...xx...","...xx...","...xx...","xxxxxxxx",".yyyyyy.","..yyyy..","..yyyy..",".yyyyyy."],
@@ -851,8 +748,6 @@ hpup:w==2?(v.hpup2||0):(v.hpup||0),hpa:w==2?(v.hpup||0):(v.hpup2||0),owned:w==2?
 gems:v.gems||0,gl:v.gl||[],fxo:v.fxo||[],fx:v.fx||'',perm:v.perm||[],ann:v.ann||0,rev:v.rev|0,streak:v.streak||0,daily:v.daily||''});S.scr=sc}
 function adopt(sv,cu){if(!sv)return false;(cu||[]).forEach(Game.addCustom);S.tb=sv.tb||0;S.perm=sv.perm||[];S.gems=sv.gems||0;S.gl=sv.gl||[];S.fxo=sv.fxo||[];S.ann=sv.ann||0;S.daily=sv.daily||'';S.streak=sv.streak||0;
 if((sv.rev|0)!==S.rev){const w=S.world;S.owned=w==2?sv.owned2:sv.owned;S.oa=w==2?sv.owned:sv.owned2;S.eq=w==2?sv.eq2:sv.eq;S.ea=w==2?sv.eq:sv.eq2;S.coins=sv.coins;S.dia=sv.dia;S.rev=sv.rev|0;return true}return false}
-async function save(){if(!USER)return;const p=STATE;let ch=false;try{const j=await api('/api/save',snap());ch=adopt(j.save,j.customs);STATE=''}catch(e){STATE='save failed'}
-if((STATE!==p||ch)&&!['fight','mini','cut','tower','wait'].includes(S.scr))render()}
 function MX(){return Game.maxHp(S.hpup,S.world)}
 function swapW(){[S.owned,S.oa]=[S.oa,S.owned];[S.eq,S.ea]=[S.ea,S.eq];[S.hpup,S.hpa]=[S.hpa,S.hpup]}
 function travel(w){if(w==S.world||(w==2&&!S.cl1))return;swapW();S.world=w;S.tgt=null;S.msel=null;S.scr='forge';sfx.start();save();render()}
@@ -878,22 +773,6 @@ if(USER){try{const j=await api('/api/save',{reset:1});(j.customs||[]).forEach(Ga
 /* ----- accounts ----- */
 function setUser(j){USER={u:j.user.username,name:j.user.name,verified:j.user.verified,needsInfo:j.user.needsInfo,age:j.user.age,caps:j.user.caps||{}}}
 function afterAuth(j){TOKEN=j.token;localStorage.setItem('fb:token',TOKEN);setUser(j);(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null;S.dailyReady=!!j.dailyReady}
-async function connect(){loadNews();
-if(TOKEN){try{const j=await api('/api/me');setUser(j);(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null;S.dailyReady=!!j.dailyReady}catch(e){if(/log in/i.test(e.message)){TOKEN='';localStorage.removeItem('fb:token')}}}
-const q=new URLSearchParams(location.search);if(q.get('paid')){history.replaceState(null,'',location.pathname);if(q.get('paid')=='1'&&USER){toast('Payment received. Adding your gems…');let n=0;const t=setInterval(async()=>{n++;try{const j=await api('/api/me');if(j.save.gems>S.gems){S.gems=j.save.gems;clearInterval(t);toast('Gems added!');sfx.gift();render()}}catch(e){}if(n>8)clearInterval(t)},2500)}}
-render();if(GIFT)showGift(GIFT);else if(USER&&USER.needsInfo&&!sessionStorage.getItem('fb:skipinfo'))openProfile()}
-function out(){api('/api/logout',{}).catch(()=>{});TOKEN='';localStorage.removeItem('fb:token');closeRoom();USER=null;S=fresh();S.scr='home';render()}
-function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label>${MODE=='new'?'<label>Email<input id="f-e" type="email" maxlength="120" autocomplete="email"></label><label>Date of birth<input id="f-d" type="date"></label>':''}<label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key==\'Enter\')submit()"></label>${MODE=='new'?'<p class="fine">We use your email to verify your account and your age to keep younger players safe. Co-op needs age 8+. Friends, chat and buying need age 13+.</p>':''}<div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
-async function submit(){const E=m=>{document.getElementById('err').textContent=m},g=id=>document.getElementById(id);
-const u=g('f-u').value.trim().toLowerCase(),pw=g('f-p').value,n=MODE=='new'?g('f-n').value.trim():'',em=MODE=='new'?g('f-e').value.trim():'',dob=MODE=='new'?g('f-d').value:'';
-if(MODE=='new'&&!n)return E('Enter your name.');
-if(!/^[a-z0-9_]{3,16}$/.test(u))return E('Username: 3 to 16 letters, numbers or underscores.');
-if(MODE=='new'&&u!=='vilocity'){if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em))return E('Enter a valid email address.');if(!dob)return E('Enter your date of birth.')}
-if(pw.length<6)return E('Password needs at least 6 characters.');
-E('One moment…');let j;
-try{j=await api(MODE=='new'?'/api/signup':'/api/login',{username:u,password:pw,name:n,email:em,dob,save:MODE=='new'?snap():undefined});afterAuth(j)}catch(e){return E(e.message)}
-closeM();render();
-if(MODE=='new'&&!USER.verified)openVerify(j.devCode,j.mailSent);else if(GIFT)showGift(GIFT);else if(USER.needsInfo)openProfile()}
 function modal(html){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true">${html}</div></div>`}
 function openVerify(dev,sent){modal(`<h2>Check your email</h2><p>We sent a 6-digit code to verify your account. It works for 15 minutes.${dev?`<br><b>Test mode:</b> your code is ${dev}`:''}${sent===false?'<br>The email could not be sent. Try Resend.':''}</p><label>Code<input id="vc" inputmode="numeric" maxlength="6" autocomplete="one-time-code" onkeydown="if(event.key==\'Enter\')doVerify()"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="doVerify()">Verify</button><div class="btnrow" style="margin-top:8px"><button onclick="resendCode()">Resend code</button><button onclick="closeM()">Later</button></div><p class="fine">You can keep playing solo without verifying. Co-op, friends and buying need a verified email.</p>`)}
 async function doVerify(){const E=m=>{document.getElementById('err').textContent=m};try{const j=await api('/api/verify',{code:document.getElementById('vc').value.trim()});USER.verified=j.user.verified;USER.caps=j.user.caps;closeM();toast('Email verified!');sfx.gift();render()}catch(e){E(e.message)}}
@@ -904,7 +783,7 @@ function openAcct(){const u=USER;modal(`<h2>${esc(u.name)}</h2><p>@${esc(u.u)}${
 async function resendCode2(){try{const j=await api('/api/verify/resend',{});openVerify(j.devCode,j.mailSent)}catch(e){toast(e.message)}}
 async function claimDaily(){try{const j=await api('/api/daily',{});S.coins=j.save.coins;S.dia=j.save.dia;S.rev=j.save.rev;S.streak=j.save.streak;S.daily=j.save.daily;S.dailyReady=false;sfx.gift();toast(`Daily reward: +${j.coins} coins${j.dia?` and +${j.dia} diamonds`:''} (streak ${j.streak})`);render()}catch(e){toast(e.message)}}
 let NEWS=null;
-async function loadNews(){try{const r=await fetch('/api/news');NEWS=await r.json()}catch(e){NEWS=null}render&&S&&render()}
+async function loadNews(){try{const r=await fetch(API_BASE+'/api/news');NEWS=await r.json()}catch(e){NEWS=null}render&&S&&render()}
 function newsKey(){return NEWS?(NEWS.news[0]?NEWS.news[0].id:0)+'|'+NEWS.version:''}
 function newsUnread(){return NEWS&&localStorage.getItem('fb:news')!==newsKey()}
 
@@ -977,8 +856,8 @@ function newsH(){if(NEWS)localStorage.setItem('fb:news',newsKey());
 const an=(NEWS?NEWS.news:[]).map(n=>`<div class="nw"><b>${esc(n.title)}</b><small>${new Date(n.t).toLocaleDateString()}</small><p>${esc(n.text)}</p></div>`).join('')||'<p class="fine">No announcements yet.</p>';
 const pn=(NEWS?NEWS.patch:Game.PATCH_NOTES).map(v=>`<div class="nw"><b>v${v.v}</b><small>${v.d}</small><ul>${v.t.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('');
 return `<h3>Announcements</h3>${an}<h3>Patch notes</h3>${pn}<h3>Tower leaderboard</h3><div id="lbd" class="fine">Loading…</div>`}
-async function loadTop(){try{const r=await fetch('/api/top'),j=await r.json(),e=document.getElementById('lbd');if(e)e.innerHTML=j.top.length?j.top.map((x,i)=>`<div class="lbr"><b>${i+1}</b><span>${esc(x.name)}</span><em>floor ${x.tb}</em></div>`).join(''):'No scores yet. Be the first to climb the tower.'}catch(e){}}
-function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back</button></div>`}
+async function loadTop(){try{const r=await fetch(API_BASE+'/api/top'),j=await r.json(),e=document.getElementById('lbd');if(e)e.innerHTML=j.top.length?j.top.map((x,i)=>`<div class="lbr"><b>${i+1}</b><span>${esc(x.name)}</span><em>floor ${x.tb}</em></div>`).join(''):'No scores yet. Be the first to climb the tower.'}catch(e){}}
+function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 /* ----- co-op fixes ----- */
 function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back':'Back'}</button>`;let b;
 if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
@@ -989,7 +868,7 @@ else if(sb=='create'){const pk=S.pick||2;b=`<p>Choose the maximum number of play
 else b=`<p>Enter the room code your friend shared.</p><label>Room code<input id="rc" maxlength="12"></label><div id="lerr" class="err" role="alert"></div><button class="go" onclick="joinRoom()">Join room</button>`;
 return `<div class="box"><h2>Co-op Tower</h2>${b}${bk}</div>`}
 function openRoom(code){closeRoom();T={cd:0,cdt:0,cdu:0,fx:0,last:null,seq:-1,sig:'',hold:0};
-ES=new EventSource(`/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
+ES=new EventSource(`${API_BASE}/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
 ES.onerror=()=>{if(ES&&ES.readyState==2){closeRoom();S.scr='lobby';S.sub='menu';render()}}}
 function closeRoom(){if(T&&T.cdt)clearTimeout(T.cdt);if(ES)ES.close();ES=null;R=null;T=null}
 function cdMs(){return Math.max(650,1000/st().spd)}
@@ -1077,10 +956,9 @@ return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class
 <div class="bt-stage"><div class="sw ${fx?'go':''}" style="${aura()}">${svg(null,'0 0 32 66',63,130)}</div>${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''} ${tele?'tele':''}" id="fboss" style="--bk:${b.k}">${bspr(b,160)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div><div id="tele" class="bt-tele ${tele?'on':''}">${tele?esc(b.n)+' is winding up! GUARD!':''}</div><div class="bt-ev" id="evl">${S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}</div></div>
 <div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="fpf" style="width:${ph}%"></i><span id="fpt">${Math.max(0,S.hp)} / ${MX()}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span class="el" style="--ec:${elc(s.e)}">${s.e}</span></div><div class="bt-btns"><button class="go swing big" onclick="atk()" ${S.cd?'disabled':''}>${cdBar(S.cd,cdMs())}<span>${S.cd?'...':'SWING'}</span></button>${b.aggr?`<button id="gbtn" class="guard big" onclick="guard()" ${gOn?'disabled':''}>${gOn?'...':'GUARD'}</button>`:''}<button class="ret" onclick="retreat()">Retreat</button></div></div></div>`}
 function fupd(){if(S.scr!='fight')return;const b=cb(),$=id=>document.getElementById(id);if(!$('fbf'))return;
-$('fbf').style.width=Math.max(0,S.bhp)/b.hp*100+'%';$('fbt').textContent=`${Math.max(0,S.bhp)} / ${b.hp}`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'%';$('fpt').textContent=`${Math.max(0,S.hp)} / ${MX()}`;
+$('fbf').style.width=Math.max(0,S.bhp)/b.hp*100+'\%';$('fbt').textContent=`${Math.max(0,S.bhp)} / ${b.hp}`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'\%';$('fpt').textContent=`${Math.max(0,S.hp)} / ${MX()}`;
 const ag=S.ag;$('fboss').classList.toggle('tele',!!(ag&&ag.tele));const t=$('tele');t.textContent=ag&&ag.tele?b.n+' is winding up! GUARD!':'';t.classList.toggle('on',!!(ag&&ag.tele));
-const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'...':'GUARD'}
-$('evl').innerHTML=S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}
+const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'...':'GUARD'}$('evl').innerHTML=S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}
 function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
 const SLOT2=['left:max(4px,calc(50% - 168px));top:4%','left:calc(50% + 100px);top:4%','left:max(4px,calc(50% - 168px));top:52%','left:calc(50% + 100px);top:52%'],SLD=[1,-1,1,-1];
 function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl${k}" style="${SLOT2[k]};--d:${SLD[k]}"><div class="tsw ${fx&&k==0?'go':''}" id="tsw${k}" style="${k==0?aura():''}">${svg(p.eq,'0 0 32 66',50,104)}</div><div class="tag">${esc(p.nm)}</div></div>`}
