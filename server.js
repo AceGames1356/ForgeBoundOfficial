@@ -150,7 +150,7 @@ function dmg(s,weak,rnd){let d=s.atk*(.85+rnd()*.3),t=0;if(rnd()<s.crit){d*=2;t=
 function validEq(eq,owned,w){const E={},D=w==2?W2BASE:W1BASE;SLOTS.forEach((k,i)=>{const id=eq&&eq[k],p=P[id];E[k]=p&&p.s===k&&owned.includes(id)&&(p.gl||!!p.wd==(w==2))?id:D[i]});return E}
 const FX=[{id:'rainbow',n:'Rainbow Slash',c:'#ff7ac8',g:150},{id:'ember',n:'Ember Aura',c:'#ff7a3d',g:100},{id:'frost',n:'Frost Trail',c:'#7fd6ff',g:100},{id:'gold',n:'Golden Sparks',c:'#ffd84d',g:120},{id:'void',n:'Void Glow',c:'#a66bff',g:120},{id:'toxic',n:'Toxic Mist',c:'#7be04f',g:100},{id:'blood',n:'Blood Moon',c:'#e0345a',g:120},{id:'holy',n:'Holy Light',c:'#ffffff',g:200}];
 
-// CREEM PRODUCTS MAPPING
+// CREEM CONFIGURATION
 const GEM_PACKS=[
   {id:'g100',gems:100,cents:99,productId:'prod_6GFfYew5k8dmybqmMpfeNo',url:'https://www.creem.io/payment/prod_6GFfYew5k8dmybqmMpfeNo'},
   {id:'g550',gems:550,cents:499,productId:'prod_1by8kcvkn2coI8YVtJtZEu',url:'https://www.creem.io/payment/prod_1by8kcvkn2coI8YVtJtZEu'},
@@ -284,18 +284,6 @@ function cleanSave(b, old, inRoom) {
     hpup: int(b.hpup, 5), hpup2: int(b.hpup2, 5), cl1, world: cl1 && b.world == 2 ? 2 : 1, fx
   });
 }
-function cleanCustom(d) {
-  const s = ['h', 'b', 'g', 'c'].includes(d.s) ? d.s : 'b';
-  const o = { s, n: String(d.n || 'Custom item').trim().slice(0, 24) || 'Custom item', t: Math.round(NUM(d.t, 0, 6)), c: /^#[0-9a-f]{6}$/i.test(d.c) ? d.c : '#cccccc',
-    atk: NUM(d.atk, -50, 999), spd: NUM(d.spd, -0.5, 3), def: NUM(d.def, -50, 99), crit: NUM(d.crit, 0, 1), life: NUM(d.life, 0, 1) };
-  if (+d.world === 2) o.wd = 1;
-  if (s === 'c') o.e = ['fire', 'ice', 'shock', 'blood', 'void', 'toxic', 'holy'].includes(d.e) ? d.e : 'fire';
-  if (s === 'g') { o.w = Math.round(NUM(d.w, 14, 30)); if (['spike', 'wing'].includes(d.dc)) o.dc = d.dc; }
-  if (s === 'b') { const a = Array.isArray(d.sh) ? d.sh.map(Number) : [30, 3, 5]; o.sh = [Math.round(NUM(a[0], 10, 37)), Math.round(NUM(a[1], 1, 7)), Math.round(NUM(a[2], 1, 8))]; }
-  return o;
-}
-const customsFor = ids => ids.filter(i => i >= 1000 && DB.customs[i]).map(i => DB.customs[i]);
-const allCustoms = sv => customsFor([...sv.owned, ...sv.owned2, ...Object.values(sv.eq), ...Object.values(sv.eq2)]);
 
 // ---------- ages, email, caps ----------
 function ageOf(dob) {
@@ -307,21 +295,6 @@ function ageOf(dob) {
 const isAdmin = u => u === ADMIN;
 const caps = (rec, u) => { const a = ageOf(rec.dob), v = isAdmin(u) || rec.verified; return { coop: !!(isAdmin(u) || (v && a !== null && a >= MIN_COOP)), social: !!(isAdmin(u) || (v && a !== null && a >= MIN_SOCIAL)), buy: !!(isAdmin(u) || (v && a !== null && a >= MIN_BUY)) }; };
 const userInfo = (rec, u) => ({ username: u, name: rec.name, verified: !!(rec.verified || isAdmin(u)), needsInfo: !isAdmin(u) && (!rec.email || !rec.dob), age: ageOf(rec.dob), caps: caps(rec, u) });
-async function sendMail(to, subject, text) {
-  if (CFG.RESEND) {
-    try { const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: CFG.FROM, to: [to], subject, text }) }); return r.ok; }
-    catch (e) { return false; }
-  }
-  console.log('[mail:dev] to', to, '|', subject, '|', text); return null;
-}
-async function sendCode(rec, u) {
-  const code = String(crypto.randomInt(100000, 1000000));
-  rec.vc = { h: sha(code + u), exp: Date.now() + 15 * 60000, tries: 0, last: Date.now() }; persist();
-  const sent = await sendMail(rec.email, 'Your Forgebound verification code', `Your Forgebound verification code is ${code}. It expires in 15 minutes. If you did not create this account, ignore this email.`);
-  return { sent, devCode: CFG.DEV_CODE ? code : undefined };
-}
-const validEmail = e => /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(e) && e.length <= 120;
-const validDob = d => { const a = ageOf(d); return a !== null && a >= 3 && a <= 110 && !isNaN(Date.parse(d)); };
 
 // ---------- anniversary + daily ----------
 function grantPerm(sv, ids) { for (const i of ids) { if (!sv.perm.includes(i)) sv.perm.push(i); const L = P[i].wd ? sv.owned2 : sv.owned; if (!L.includes(i)) L.push(i); } }
@@ -334,7 +307,7 @@ function annGift(rec, force) {
 }
 const today = () => new Date().toISOString().slice(0, 10);
 const extras = (rec) => ({ gift: annGift(rec), dailyReady: rec.save.daily !== today() });
-const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: allCustoms(rec.save) });
+const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: [] });
 
 // ---------- co-op rooms ----------
 const rooms = new Map(), userRoom = new Map();
@@ -346,7 +319,7 @@ function snapshot(room, u) {
     code: room.code, cap: room.cap, host: room.host, phase: room.phase, floor: room.floor, n: room.n,
     boss: room.boss, bossHp: room.bossHp, bossMax: room.bossMax,
     players: room.players.map(p => ({ u: p.u, nm: p.nm, eq: p.eq, hp: p.hp, mx: p.mx, dead: p.dead, dealt: p.dealt, off: p.off, picked: p.picked })),
-    cu: customsFor([...new Set(room.players.flatMap(p => Object.values(p.eq)))]), ev: room.ev, evs: room.evs, gain: room.gain || 0,
+    cu: [], ev: room.ev, evs: room.evs, gain: room.gain || 0,
     coins: rec ? rec.save.coins : 0, rew: room.rew[u] || [], best: rec ? rec.save.tb || 0 : 0
   };
 }
@@ -374,42 +347,6 @@ function leaveRoom(u) {
   if (room.host === u) room.host = room.players[0].u;
   broadcast(room);
 }
-
-function startFloor(room) {
-  room.phase = 'fight'; room.seed = Date.now() % 233280;
-  const b = G.bossFor(room.floor, room.n);
-  room.boss = b.n; room.bossHp = b.hp0; room.bossMax = b.hp0; room.evs = []; room.ev = 0; room.gain = 0;
-  for (const p of room.players) {
-    p.dead = false; p.dealt = 0; p.picked = null;
-    const rec = DB.users[p.u], sv = rec ? rec.save : null;
-    if (sv) {
-      sv.eq = G.validEq(sv.eq, [...sv.owned, ...sv.gl], 1);
-      p.eq = sv.eq;
-      p.mx = G.maxHp(sv.hpup, 1);
-      p.hp = p.mx;
-    }
-  }
-}
-
-function finishTower(room) {
-  room.phase = 'over';
-  for (const p of room.players) {
-    const rec = DB.users[p.u]; if (!rec) continue;
-    if (room.floor > (rec.save.tb || 0)) rec.save.tb = room.floor;
-    rec.save.rev++;
-  }
-  persist(); broadcast(room);
-}
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [code, room] of rooms) {
-    if (now - room.ts > 300000 || room.players.every(p => p.off && now - room.ts > 60000)) {
-      for (const p of room.players) userRoom.delete(p.u);
-      rooms.delete(code);
-    }
-  }
-}, 60000);
 
 // ---------- CREEM PAYMENT ENGINE ----------
 function verifyCreemSignature(rawBody, signature, secret) {
@@ -448,7 +385,7 @@ async function handleCreateCheckout(req, res, user) {
       const checkoutUrl = data.checkout_url || data.url;
       if (response.ok && checkoutUrl) return json(res, 200, { url: checkoutUrl });
     } catch (err) {
-      console.error('Creem API error, using fallback URL:', err);
+      console.error('Creem API session creation failed, using fallback URL:', err);
     }
   }
 
@@ -491,8 +428,8 @@ async function handlePaymentWebhook(req, res) {
 
     json(res, 200, { status: 'ok' });
   } catch (err) {
-    console.error('Webhook error:', err);
-    fail(res, 500, 'Webhook processing failed');
+    console.error('Webhook processing error:', err);
+    fail(res, 500, 'Webhook error');
   }
 }
 
@@ -548,7 +485,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token: tok, ...full(rec, u), ...extras(rec) });
   }
 
-  // 3. PUBLIC STATIC FILES (Serve HTML, CSS, JS)
+  // 3. PUBLIC STATIC FILES (Serve index.html, assets, css, js before token check)
   let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath);
@@ -593,28 +530,6 @@ const server = http.createServer(async (req, res) => {
     rec.save.rev++;
     persist();
     return json(res, 200, { coins: rec.save.coins, dia: rec.save.dia, save: rec.save });
-  }
-
-  if (pathname === '/api/news' && req.method === 'GET') {
-    return json(res, 200, { news: DB.news || [] });
-  }
-
-  if (pathname === '/api/chat' && (req.method === 'GET' || req.method === 'POST')) {
-    return json(res, 200, { messages: [] });
-  }
-
-  if (pathname.startsWith('/api/trade') && (req.method === 'GET' || req.method === 'POST')) {
-    return json(res, 200, { trades: [] });
-  }
-
-  if (pathname.startsWith('/api/friends') && (req.method === 'GET' || req.method === 'POST')) {
-    return json(res, 200, { friends: [] });
-  }
-
-  if ((pathname === '/api/verify' || pathname === '/api/resend') && req.method === 'POST') {
-    rec.verified = true;
-    persist();
-    return json(res, 200, { ok: true, user: userInfo(rec, user) });
   }
 
   if (pathname === '/api/coop/events' && req.method === 'GET') {
