@@ -117,8 +117,7 @@ const WORLD2=[
 {n:'Sand Golem',k:'#d9b36a',w:'ice'},{n:'Dune Stalker',k:'#c9a23a',w:'shock'},{n:'Scarab Matriarch',k:'#4fb04a',w:'fire'},{n:'Mirage Wraith',k:'#b99cff',w:'void'},{n:'Cactus King',k:'#4d8a4a',w:'fire'},
 {n:'Thornback Boar',k:'#8a5a2b',w:'fire'},{n:'Elder Treant',k:'#3f7a3a',w:'fire'},{n:'Moss Hydra',k:'#6fbf5a',w:'shock'},{n:'Fae Queen',k:'#ff7ac8',w:'blood'},
 {n:'Frost Yeti',k:'#cfe6ff',w:'fire'},{n:'Ice Drake',k:'#7fd6ff',w:'shock'},{n:'Blizzard Witch',k:'#8fa8ff',w:'blood'},{n:'Glacier Titan',k:'#9fd8ff',w:'toxic'},
-{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},
-{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},{n:'ViLocity',k:'#fff3b0',w:'holy'}];
+{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},{n:'ViLocity',k:'#fff3b0',w:'holy'}];
 const R2=[20, 18, 19, 17, 18, 20, 20, 20, 19, 20, 20, 20, 20, 20, 20, 27, 28, 25, 26, 30, 20],AGPW=28;
 const W2HP=[60, 70, 85, 100, 120, 150, 190, 240, 300, 380, 470, 580, 720, 880, 1080, 1330, 1650, 2050, 2500, 3000, 6500],W2R=[7, 17, 21, 28, 29, 27, 36, 31, 30, 32, 39, 41, 36, 37, 47, 42, 43, 39, 50, 47, 34];
 WORLD2.forEach((b,i)=>{b.hp=W2HP[i];b.r=W2R[i];b.fl=.1;b.coin=i==20?2500:120+45*i;b.dia=i==20?200:4+2*i});
@@ -244,7 +243,7 @@ const newSave = () => ({ owned: [...G.W1BASE], eq: eqOf(G.W1BASE), owned2: [...G
   hpup: 0, hpup2: 0, world: 1, cl1: 0, perm: [], ann: 0, gems: 0, gl: [], fxo: [], fx: '', rev: 0, daily: '', streak: 0 });
 function migrate(sv) {
   const d = newSave(); if (!sv) return d;
-  if (sv.owned2 === undefined) { // v2 -> v3: split the single inventory into World 1 and World 2
+  if (sv.owned2 === undefined) {
     const all = sv.owned || [];
     sv.owned2 = [...new Set([...G.W2BASE, ...all.filter(i => P[i] && P[i].wd)])];
     sv.owned = all.filter(i => P[i] && !P[i].wd);
@@ -268,7 +267,7 @@ function giveItem(sv, id) {
 function cleanSave(b, old, inRoom) {
   old = migrate(old);
   const int = (v, max) => Math.max(0, Math.min(max, Number.isInteger(+v) ? +v : 0));
-  if (b.reset) { // New run: wipes the run (including admin gifts and custom items) but keeps purchases, permanent items and records
+  if (b.reset) {
     const o1 = [...new Set([...G.W1BASE, ...old.perm.filter(i => P[i] && !P[i].wd)])], o2 = [...new Set([...G.W2BASE, ...old.perm.filter(i => P[i] && P[i].wd)])];
     return Object.assign({}, old, { owned: o1, owned2: o2, eq: G.validEq(null, o1, 1), eq2: G.validEq(null, o2, 2), boss: 0, b2: 0, world: 1, cl1: 0, coins: 0, dia: 0, hpup: 0, hpup2: 0, rev: old.rev + 1 });
   }
@@ -376,8 +375,6 @@ function leaveRoom(u) {
   broadcast(room);
 }
 
-const rndFrom = room => { room.seed = (room.seed * 9301 + 49297) % 233280; return room.seed / 233280; };
-
 function startFloor(room) {
   room.phase = 'fight'; room.seed = Date.now() % 233280;
   const b = G.bossFor(room.floor, room.n);
@@ -404,7 +401,6 @@ function finishTower(room) {
   persist(); broadcast(room);
 }
 
-// Cleanup inactive rooms every 60 seconds
 setInterval(() => {
   const now = Date.now();
   for (const [code, room] of rooms) {
@@ -415,7 +411,7 @@ setInterval(() => {
   }
 }, 60000);
 
-// ---------- CREEM PAYMENT GATEWAY ENGINE ----------
+// ---------- CREEM PAYMENT ENGINE ----------
 function verifyCreemSignature(rawBody, signature, secret) {
   if (!signature || !secret) return false;
   try {
@@ -450,12 +446,9 @@ async function handleCreateCheckout(req, res, user) {
 
       const data = await response.json();
       const checkoutUrl = data.checkout_url || data.url;
-
-      if (response.ok && checkoutUrl) {
-        return json(res, 200, { url: checkoutUrl });
-      }
+      if (response.ok && checkoutUrl) return json(res, 200, { url: checkoutUrl });
     } catch (err) {
-      console.error('Creem API checkout error, falling back to direct URL:', err);
+      console.error('Creem API error, using fallback URL:', err);
     }
   }
 
@@ -479,9 +472,7 @@ async function handlePaymentWebhook(req, res) {
       const data = payload.data || payload.object || payload;
       const orderId = String(data.id || data.order_id || Date.now());
 
-      if (DB.paid[orderId]) {
-        return json(res, 200, { status: 'already_processed' });
-      }
+      if (DB.paid[orderId]) return json(res, 200, { status: 'already_processed' });
 
       const meta = data.metadata || data.custom_fields || {};
       const username = meta.username || meta.custom_username || data.customer_custom_username;
@@ -493,14 +484,7 @@ async function handlePaymentWebhook(req, res) {
       if (userRec && pack) {
         userRec.save.gems = (userRec.save.gems || 0) + pack.gems;
         userRec.save.rev = (userRec.save.rev || 0) + 1;
-
-        DB.paid[orderId] = {
-          user: username,
-          packId: pack.id,
-          gems: pack.gems,
-          paidAt: Date.now()
-        };
-
+        DB.paid[orderId] = { user: username, packId: pack.id, gems: pack.gems, paidAt: Date.now() };
         persist();
       }
     }
@@ -513,7 +497,6 @@ async function handlePaymentWebhook(req, res) {
 }
 
 // ---------- HTTP SERVER & API ROUTES ----------
-// ---------- HTTP SERVER & API ROUTES ----------
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -523,12 +506,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
 
-  // 1. PUBLIC WEBHOOK (No Auth)
+  // 1. PUBLIC WEBHOOK
   if (pathname === '/api/payment/webhook' && req.method === 'POST') {
     return handlePaymentWebhook(req, res);
   }
 
-  // 2. PUBLIC AUTH ROUTES (No Token Required)
+  // 2. PUBLIC AUTH ROUTES
   if (pathname === '/api/register' && req.method === 'POST') {
     if (limited(req, 10)) return fail(res, 429, 'Too many attempts');
     const b = await body(req);
@@ -565,7 +548,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token: tok, ...full(rec, u), ...extras(rec) });
   }
 
-  // 3. PUBLIC STATIC FILES (Serve index.html, game assets, CSS, JS without token)
+  // 3. PUBLIC STATIC FILES (Serve HTML, CSS, JS)
   let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
     const ext = path.extname(filePath);
@@ -574,7 +557,7 @@ const server = http.createServer(async (req, res) => {
     return fs.createReadStream(filePath).pipe(res);
   }
 
-  // 4. AUTHENTICATED API ENDPOINTS
+  // 4. AUTHENTICATED ENDPOINTS
   let user = null;
   const auth = req.headers.authorization;
   if (auth && auth.startsWith('Bearer ')) {
@@ -610,6 +593,28 @@ const server = http.createServer(async (req, res) => {
     rec.save.rev++;
     persist();
     return json(res, 200, { coins: rec.save.coins, dia: rec.save.dia, save: rec.save });
+  }
+
+  if (pathname === '/api/news' && req.method === 'GET') {
+    return json(res, 200, { news: DB.news || [] });
+  }
+
+  if (pathname === '/api/chat' && (req.method === 'GET' || req.method === 'POST')) {
+    return json(res, 200, { messages: [] });
+  }
+
+  if (pathname.startsWith('/api/trade') && (req.method === 'GET' || req.method === 'POST')) {
+    return json(res, 200, { trades: [] });
+  }
+
+  if (pathname.startsWith('/api/friends') && (req.method === 'GET' || req.method === 'POST')) {
+    return json(res, 200, { friends: [] });
+  }
+
+  if ((pathname === '/api/verify' || pathname === '/api/resend') && req.method === 'POST') {
+    rec.verified = true;
+    persist();
+    return json(res, 200, { ok: true, user: userInfo(rec, user) });
   }
 
   if (pathname === '/api/coop/events' && req.method === 'GET') {
