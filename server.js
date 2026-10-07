@@ -546,7 +546,6 @@ async function handleApi(req, res, url) {
           product_id: productId,
           request_id: `${me}_${Date.now()}`,
           success_url: CFG.PUBLIC_URL + '/?paid=1',
-          cancel_url: CFG.PUBLIC_URL + '/?paid=0',
           metadata: { user: me, pack: b.pack }
         })
       });
