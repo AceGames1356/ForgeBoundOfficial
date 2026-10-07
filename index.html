@@ -1183,7 +1183,51 @@ async function rejectGcash(requestId) {
 S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
 </script>
 
-<!-- GCash Payment Modal HTML -->
+<!-- JavaScript logic stays inside the <script> tags -->
+let currentGcashPack = null;
+
+function checkout(packId) {
+  const pack = GEM_PACKS.find(p => p.id === packId);
+  if (!pack) return;
+
+  currentGcashPack = packId;
+  const phpPrice = '₱' + Math.round((pack.cents / 100) * 58); 
+  
+  document.getElementById('gcashPrice').textContent = `${phpPrice} (${pack.gems} Gems)`;
+  document.getElementById('gcashRefInput').value = '';
+  document.getElementById('gcashErr').textContent = '';
+  document.getElementById('gcashModal').style.display = 'grid';
+}
+
+function closeGcashModal() {
+  document.getElementById('gcashModal').style.display = 'none';
+  currentGcashPack = null;
+}
+
+async function submitGcashModal() {
+  const refNo = document.getElementById('gcashRefInput').value.trim();
+  const errEl = document.getElementById('gcashErr');
+  
+  if (!/^\d{8,13}\$/.test(refNo)) {
+    errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
+    return;
+  }
+
+  errEl.textContent = 'Submitting…';
+
+  try {
+    const res = await api('/api/shop/gcash-submit', { packId: currentGcashPack, refNo });
+    toast(res.message || 'Payment submitted!');
+    closeGcashModal();
+  } catch (err) {
+    errEl.textContent = err.message || 'Submission failed.';
+  }
+}
+
+S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
+</script>
+
+<!-- HTML elements go AFTER </script> and BEFORE </body> -->
 <div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
   <div class="dlg" style="text-align:center;">
     <h2 style="color:var(--acc); margin-bottom:4px;">Pay with GCash</h2>
@@ -1209,7 +1253,8 @@ S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'
   </div>
 </div>
 
-</body></html>
+</body>
+</html>
 
 S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
 </script></body></html>
