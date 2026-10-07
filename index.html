@@ -1056,6 +1056,65 @@ else if(AD.tab=='coins')b=`<label>Amount<input type="number" value="${AD.amt}" o
 else if(AD.tab=='news')b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>${esc(n.title)}</b><button onclick="admDelNews(${n.id})">Delete</button></div>`).join('')}`;
 else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div>`;
 return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`}
+  // ----- GCash Admin Review Functions -----
+async function loadAdminGcash() {
+  try {
+    const data = await api('/api/admin/gcash-requests');
+    const el = document.getElementById('gcashAdminList');
+    if (!el) return;
+
+    if (!data.pending.length) {
+      el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
+      return;
+    }
+
+    el.innerHTML = data.pending.map(item => `
+      <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div>
+          <b>@${esc(item.user)}</b> · Ref: <span style="color:var(--acc);">${esc(item.ref)}</span><br>
+          <small>${item.gems} Gems ($${(item.cents / 100).toFixed(2)})</small>
+        </div>
+        <div class="btnrow">
+          <button class="go sm" onclick="confirmGcash('${item.id}')">Confirm</button>
+          <button class="sm" onclick="rejectGcash('${item.id}')">Reject</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+async function confirmGcash(requestId) {
+  try {
+    const res = await api('/api/admin/gcash-confirm', { requestId });
+    toast(res.message);
+    loadAdminGcash();
+  } catch (e) { toast(e.message); }
+}
+
+async function rejectGcash(requestId) {
+  try {
+    const res = await api('/api/admin/gcash-reject', { requestId });
+    toast(res.message);
+    loadAdminGcash();
+  } catch (e) { toast(e.message); }
+}
+
+/* ----- render ----- */
+function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
+const a=document.getElementById('app');st();
+const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
+const h=M();document.getElementById('tbar').innerHTML=head();
+const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
+const top=RL.scr!=S.scr;RL.scr=S.scr;a.innerHTML=h;if(top)a.scrollTop=0;
+if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap();if(S.scr=='friends'&&USER&&USER.caps.social)frStart();if(S.scr=='news')loadTop();if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
+if(S.scr=='admin')loadAdminGcash();} // <-- Automatically fetches pending payments when Admin tab opens
+
+const RL={scr:''};
+AD.cust.world=1;AD.q='';
+
+function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '';if(cur)return i<pr?`<button class="go sm" onclick="start(${i})">Fight again</button>`:`<button class="go sm" onclick="start()">Fight</button>`;return S.cl1?`<button class="go sm" onclick="travel(${w})">Travel to World ${w}</button>`:''}
 /* ----- render ----- */
 function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
 const a=document.getElementById('app');st();
