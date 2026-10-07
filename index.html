@@ -526,7 +526,7 @@ const NB=[
 {a:'#9c2233',b:'#5e1420',c:'#e05a6a',e:'#ffe14d',y:'#d9b24a',r:["o.......","oo....yy","oaoooooy",".oaaaaaa",".oaaaaaa",".oaeeaaa",".oaaaaaa","..ooaaaa",".ooooooo","oaaacaaa","oaabbbbb","oyabbbbb","oaabbbbb",".oabbbbb",".ooabbbb","..oooooo"]},
 {a:'#2d6fa8',b:'#173f68',c:'#7fd6ff',e:'#ffe14d',r:["..oooooo",".oaaaaaa","oaaccaaa","oaaaaaaa","oaeeaaaa","oaaaaaaa","oaabbbbb",".oabwbwb",".oabbbbb","..oabbbb","..oabcbb","..oabbbb","...oabbb","...oabbb","....oabb",".....ooo"]},
 {a:'#e8b73a',b:'#a97a12',c:'#fff0a8',e:'#ff5a1f',f:'#ff9d2b',r:["f..f..f.",".f.f.f.f","..ffffff","..oooooo",".oaaaaaa",".oaeeaaa",".oaaaaaa","..ooaaaa",".ooooooo","oaccaaaa","oaaaabbb","oabbbbbb","oabbcbbb",".oabbbbb",".oaabbbb","..oooooo"]},
-{a:'#3b2a6b',b:'#1f1540',c:'#a66bff',e:'#ff3b6b',y:'#d9b24a',r:["..y.y.yy","..yyyyyy","..oooooo",".oaaaaaa",".oaeeaaa",".oaaaaaa","..ooaaaa",".oaaaccc","oaabbbbb","oabbcbbb","oabbbbbb","oabbbbbb","oabbbbbb","oabbbbbb","oaabbbbb","oooooooo"]},
+{a:'#3b2a6b',b:'#1f1540',c:'#a66bff',e:'#ff2a2a',y:'#d9b24a',r:["..y.y.yy","..yyyyyy","..oooooo",".oaaaaaa",".oaeeaaa",".oaaaaaa","..ooaaaa",".oaaaccc","oaabbbbb","oabbcbbb","oabbbbbb","oabbbbbb","oabbbbbb","oabbbbbb","oaabbbbb","oooooooo"]},
 {a:'#f4eec8',b:'#c9c08a',c:'#ffffff',e:'#4fc3ff',y:'#ffd84d',r:["...yyyyy","...y....","...yyyyy","..oooooo",".oaaaaaa",".oaeeaaa",".oaaaaaa","..ooaaaa","cooooooo","cccaaaaa","ccaabbbb","ccaabcbb","cc.oabbb","c..oabbb","...oaabb","....oooo"]},
 {a:'#fff3b0',b:'#d9b24a',c:'#ffffff',e:'#ff2a2a',f:'#ff9d2b',y:'#ffd84d',r:["f..y..y.","f.yy.yy.",".fyyyyyy","foooooof","oaaaaaaa","oaeaeaaa","oaaaaaaa","oaabbbbb","ooaaaccc","oaaacccc","oabbcccc","oabbcbbb","oabbbbbb","fobbbbbb","ffoooooo",".fffffff"]}];
 BS.push(...NB);
@@ -721,7 +721,7 @@ draw(cx){drawFloor(cx,Wg);sl.forEach(e=>dS(cx,'slime',e.x,e.y,3));if(!(p.inv&&Ma
 if(p.sw>0){cx.fillStyle='#fff';for(let a=-1;a<=1;a++){const px=p.x+p.fx*26+(-p.fy)*a*10,py=p.y+p.fy*26+p.fx*a*10;cx.fillRect(Math.round(px)-3,Math.round(py)-3,6,6)}}},
 hud(){return `Hearts ${s.hp}   Slimes ${s.k}/15   Time ${Math.max(0,Math.ceil(s.t))}`}}}};
 
-/* ================= v3 layer (overrides earlier definitions) ================= */
+/* ===== v3 interface ===== */
 const IC={forge:["...xx...","...xx...","...xx...","xxxxxxxx",".yyyyyy.","..yyyy..","..yyyy..",".yyyyyy."],
 map:["xxxxxxxx","x.y..y.x","x..yy..x","x.y..y.x","x..yy..x","x.y..y.x","x......x","xxxxxxxx"],
 shop:["..xxxx..",".x....x.","xxxxxxxx","xyyyyyyx","xyyxxyyx","xyyyyyyx","xyyyyyyx","xxxxxxxx"],
@@ -860,7 +860,7 @@ async function loadTop(){try{const r=await fetch(API_BASE+'/api/top'),j=await r.
 function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 /* ----- co-op fixes ----- */
 function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back':'Back'}</button>`;let b;
-if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
+if(!USER)b=`<p>Log in to play Co-op.</p><button class="go" onclick="openM()">Log in or create account</button>`;
 else if(S.world==2)b=`<p>The co-op tower uses World 1 gear. Travel to World 1 to play it.</p><button class="go" onclick="travel(1)">Travel to World 1</button>`;
 else if(!USER.caps.coop)b=`<p>Co-op needs a verified email and age 8 or older.</p>${USER.verified?'':'<button class="go" onclick="openVerify()">Enter verification code</button>'}`;
 else if(sb=='menu')b=`<p>Climb a tower with friends. Tower bosses hit harder and have more health the more players you bring. Every 5th floor has a special boss.</p><button class="go" onclick="sub('create')">Create room</button><button style="margin-top:8px;width:100%;text-align:center" onclick="sub('join')">Join room</button>`;
@@ -937,7 +937,7 @@ else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><b
 return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`}
 /* ----- render ----- */
 function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
-const a=document.getElementById('app');st();
+const a=document.getElementById('app');
 const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
 const h=M();document.getElementById('tbar').innerHTML=head();
 const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
