@@ -150,7 +150,15 @@ const recoil=(r,d,f)=>Math.max(Math.ceil(r*(f||.25)),r-d);
 function dmg(s,weak,rnd){let d=s.atk*(.85+rnd()*.3),t=0;if(rnd()<s.crit){d*=2;t=1}if(s.e===weak){d*=1.8;t=1}return{d:Math.round(d),t}}
 function validEq(eq,owned,w){const E={},D=w==2?W2BASE:W1BASE;SLOTS.forEach((k,i)=>{const id=eq&&eq[k],p=P[id];E[k]=p&&p.s===k&&owned.includes(id)&&(p.gl||!!p.wd==(w==2))?id:D[i]});return E}
 const FX=[{id:'rainbow',n:'Rainbow Slash',c:'#ff7ac8',g:150},{id:'ember',n:'Ember Aura',c:'#ff7a3d',g:100},{id:'frost',n:'Frost Trail',c:'#7fd6ff',g:100},{id:'gold',n:'Golden Sparks',c:'#ffd84d',g:120},{id:'void',n:'Void Glow',c:'#a66bff',g:120},{id:'toxic',n:'Toxic Mist',c:'#7be04f',g:100},{id:'blood',n:'Blood Moon',c:'#e0345a',g:120},{id:'holy',n:'Holy Light',c:'#ffffff',g:200}];
-const GEM_PACKS=[{id:'g100',gems:100,cents:99},{id:'g550',gems:550,cents:499},{id:'g1200',gems:1200,cents:999},{id:'g2600',gems:2600,cents:1999}];
+
+// CREEM PRODUCTS MAPPING
+const GEM_PACKS=[
+  {id:'g100',gems:100,cents:99,productId:'prod_6GFfYew5k8dmybqmMpfeNo',url:'https://www.creem.io/payment/prod_6GFfYew5k8dmybqmMpfeNo'},
+  {id:'g550',gems:550,cents:499,productId:'prod_1by8kcvkn2coI8YVtJtZEu',url:'https://www.creem.io/payment/prod_1by8kcvkn2coI8YVtJtZEu'},
+  {id:'g1200',gems:1200,cents:999,productId:'prod_6ADiXfkLmxmD0Vy8jeB8YU',url:'https://www.creem.io/payment/prod_6ADiXfkLmxmD0Vy8jeB8YU'},
+  {id:'g2600',gems:2600,cents:1999,productId:'prod_5dTmCwcsPc8xFRshpAsKf',url:'https://www.creem.io/payment/prod_5dTmCwcsPc8xFRshpAsKf'}
+];
+
 const PATCH_NOTES=[
 {v:'2.0.0',d:'Oct 2026',t:['New battle screens for boss fights and the co-op tower: big boss stage, health bars with numbers, a swing cooldown bar, and a Retreat button.','World 2 with its cutscene, diamonds, minigames, the ViLocity boss, the boss map, the anniversary event and the New run fix.','World 2 is now its own game: its own starter gear, parts, shop and health upgrades. Your World 1 items stay in World 1.','Travel between worlds any time from the Map. Repeat any boss you have beaten for coins, diamonds and part drops.','World 2 bosses are much easier early on, and ViLocity can be beaten.','124+ new weapon attachments across both worlds, plus Prism super items.','Friends: add friends, chat and trade parts (World 1 parts in World 1, World 2 parts in World 2).','Gems: buy with real money, spend on Prism items and effects that work in both worlds.','New home screen and a compact layout so you scroll less, new colour themes, and this news screen.','Accounts: email verification and date of birth. Co-op needs age 8+ and chat, trading and buying need age 13+.','Fixed co-op tower: a teammate could get stuck unable to attack.','Daily reward, How to play guide, tower leaderboard.']},
 {v:'1.0.0',d:'Sep 2026',t:['Forgebound launches: forge weapons, 12 bosses, shop, accounts, admin panel and the co-op tower.']}];
@@ -164,7 +172,8 @@ const PORT = process.env.PORT || 3000;
 const ADMIN = String(process.env.ADMIN_USER || 'vilocity').toLowerCase();
 const CFG = {
   PUBLIC_URL: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
-  STRIPE_KEY: process.env.STRIPE_SECRET_KEY || '', STRIPE_WH: process.env.STRIPE_WEBHOOK_SECRET || '',
+  CREEM_API_KEY: process.env.CREEM_API_KEY || '',
+  CREEM_WEBHOOK_SECRET: process.env.CREEM_WEBHOOK_SECRET || '',
   RESEND: process.env.RESEND_API_KEY || '', FROM: process.env.EMAIL_FROM || 'Forgebound <onboarding@resend.dev>',
   DEV_CODE: process.env.DEV_SHOW_CODE === '1'
 };
@@ -328,6 +337,107 @@ const today = () => new Date().toISOString().slice(0, 10);
 const extras = (rec) => ({ gift: annGift(rec), dailyReady: rec.save.daily !== today() });
 const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: allCustoms(rec.save) });
 
+// ---------- CREEM PAYMENT GATEWAY ENGINE ----------
+function verifyCreemSignature(rawBody, signature, secret) {
+  if (!signature || !secret) return false;
+  try {
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = hmac.update(rawBody).digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+  } catch (e) {
+    return false;
+  }
+}
+
+async function handleCreateCheckout(req, res, user) {
+  const b = await body(req);
+  const pack = G.GEM_PACKS.find(p => p.id === b.packId);
+  if (!pack) return fail(res, 400, 'Invalid gem pack');
+
+  // If Creem API key is configured, generate dynamic checkout session
+  if (CFG.CREEM_API_KEY) {
+    try {
+      const response = await fetch('https://api.creem.io/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'x-api-key': CFG.CREEM_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          product_id: pack.productId,
+          metadata: { username: user, pack_id: pack.id },
+          success_url: `${CFG.PUBLIC_URL}/?payment=success`,
+          cancel_url: `${CFG.PUBLIC_URL}/?payment=cancelled`
+        })
+      });
+
+      const data = await response.json();
+      const checkoutUrl = data.checkout_url || data.url;
+
+      if (response.ok && checkoutUrl) {
+        return json(res, 200, { url: checkoutUrl });
+      }
+    } catch (err) {
+      console.error('Creem API session creation failed, using direct checkout link:', err);
+    }
+  }
+
+  // Direct product URL fallback with custom metadata query parameter
+  const checkoutUrl = `${pack.url}?custom_username=${encodeURIComponent(user)}&custom_pack=${pack.id}`;
+  json(res, 200, { url: checkoutUrl });
+}
+
+async function handlePaymentWebhook(req, res) {
+  try {
+    const rawText = await readBody(req, 100000);
+    const sigHeader = req.headers['x-creem-signature'] || req.headers['x-signature'];
+
+    if (CFG.CREEM_WEBHOOK_SECRET && !verifyCreemSignature(rawText, sigHeader, CFG.CREEM_WEBHOOK_SECRET)) {
+      console.warn('Invalid Creem webhook signature');
+      return fail(res, 400, 'Invalid signature');
+    }
+
+    const payload = JSON.parse(rawText);
+    const event = payload.event || payload.type || '';
+
+    if (event === 'checkout.completed' || event === 'order.paid' || event === 'payment.succeeded') {
+      const data = payload.data || payload.object || payload;
+      const orderId = String(data.id || data.order_id || Date.now());
+
+      if (DB.paid[orderId]) {
+        return json(res, 200, { status: 'already_processed' });
+      }
+
+      const meta = data.metadata || data.custom_fields || {};
+      const username = meta.username || meta.custom_username || data.customer_custom_username;
+      const packId = meta.pack_id || meta.custom_pack;
+
+      const userRec = DB.users[username];
+      const pack = G.GEM_PACKS.find(p => p.id === packId || p.productId === data.product_id);
+
+      if (userRec && pack) {
+        userRec.save.gems = (userRec.save.gems || 0) + pack.gems;
+        userRec.save.rev = (userRec.save.rev || 0) + 1;
+
+        DB.paid[orderId] = {
+          user: username,
+          packId: pack.id,
+          gems: pack.gems,
+          paidAt: Date.now()
+        };
+
+        persist();
+        console.log(`[Creem] Successfully credited ${pack.gems} gems to player: ${username}`);
+      }
+    }
+
+    json(res, 200, { status: 'ok' });
+  } catch (err) {
+    console.error('Error handling Creem payment webhook:', err);
+    fail(res, 500, 'Webhook processing failed');
+  }
+}
+
 // ---------- co-op rooms ----------
 const rooms = new Map(), userRoom = new Map();
 const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -346,358 +456,296 @@ function broadcast(room) {
   room.ts = Date.now();
   for (const p of room.players) if (p.res && !p.off) { try { p.res.write('data: ' + JSON.stringify(snapshot(room, p.u)) + '\n\n'); } catch (e) { p.off = true; } }
 }
-function startFloor(room, f) {
-  room.floor = f; room.boss = G.bossFor(f, room.n); room.bossMax = room.bossHp = room.boss.hp0;
-  room.players.forEach(p => { p.hp = p.mx; p.dead = 0; p.dealt = 0; p.picked = false; });
-  room.rew = {}; room.phase = 'fight';
 }
-function rollRewards(room) {
-  room.gain = (20 + 8 * room.floor) * (room.boss.sp ? 2 : 1);
-  for (const p of room.players) {
-    const sv = DB.users[p.u].save;
-    room.rew[p.u] = G.towerPool(room.floor, room.boss.sp, sv.owned);
-    sv.tb = Math.max(sv.tb || 0, room.floor); sv.coins = (sv.coins || 0) + room.gain;
-  }
-  persist();
 }
-function checkReward(room) {
-  const active = room.players.filter(p => !p.off);
-  if (room.phase === 'reward' && active.length && active.every(p => p.picked)) startFloor(room, room.floor + 1);
+
+function joinSSE(req, res, u) {
+  const code = userRoom.get(u), room = code && rooms.get(code);
+  if (!room) return fail(res, 404, 'Not in room');
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' });
+  res.write('\n');
+  const p = room.players.find(x => x.u === u);
+  if (p) { p.res = res; p.off = false; }
+  req.on('close', () => { if (p) { p.res = null; p.off = true; } });
+  broadcast(room);
 }
-function removePlayer(room, u) {
-  const i = room.players.findIndex(p => p.u === u); if (i < 0) return;
-  const p = room.players[i]; if (p.res) { try { p.res.end(); } catch (e) {} } clearTimeout(p.timer);
-  room.players.splice(i, 1); userRoom.delete(u);
-  if (!room.players.length) { rooms.delete(room.code); return; }
+
+function leaveRoom(u) {
+  const code = userRoom.get(u); if (!code) return;
+  const room = rooms.get(code); userRoom.delete(u); if (!room) return;
+  room.players = room.players.filter(p => p.u !== u);
+  if (!room.players.length) { rooms.delete(code); return; }
   if (room.host === u) room.host = room.players[0].u;
-  if (room.phase === 'fight' && room.players.every(q => q.dead)) room.phase = 'over';
-  checkReward(room); broadcast(room);
-}
-function roomOf(user, res) {
-  const room = rooms.get(userRoom.get(user.u));
-  if (!room) { fail(res, 404, 'You are not in a room.'); return null; }
-  return room;
-}
-setInterval(() => { for (const r of rooms.values()) if (Date.now() - r.ts > 3600000) r.players.slice().forEach(p => removePlayer(r, p.u)); }, 60000);
-
-// ---------- stripe ----------
-function verifyStripe(raw, header, secret) {
-  if (!header || !secret) return false;
-  const parts = header.split(','), t = (parts.find(x => x.startsWith('t=')) || '').slice(2);
-  const sig = crypto.createHmac('sha256', secret).update(t + '.' + raw).digest('hex');
-  const ok = parts.filter(x => x.startsWith('v1=')).some(x => { const v = x.slice(3); return v.length === sig.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(sig)); });
-  return ok && Math.abs(Date.now() / 1000 - Number(t)) < 600;
-}
-function creditPayment(session) {
-  if (!session || DB.paid[session.id] || session.payment_status !== 'paid') return false;
-  const md = session.metadata || {}, rec = DB.users[md.user], pack = G.GEM_PACKS.find(x => x.id === md.pack);
-  if (!rec || !pack || session.amount_total !== pack.cents) { console.error('payment mismatch', session.id); return false; }
-  DB.paid[session.id] = { u: md.user, gems: pack.gems, t: Date.now() }; rec.save.gems += pack.gems; persist(); return true;
+  broadcast(room);
 }
 
-// ---------- API ----------
-const gemItem = id => P[id] && P[id].gl ? P[id] : null;
-async function handleApi(req, res, url) {
-  const route = url.pathname;
+const rndFrom = room => { room.seed = (room.seed * 9301 + 49297) % 233280; return room.seed / 233280; };
 
-  if (route === '/api/stripe/webhook') {
-    const raw = await readBody(req, 200000);
-    if (!verifyStripe(raw, req.headers['stripe-signature'], CFG.STRIPE_WH)) return fail(res, 400, 'Bad signature.');
-    let ev; try { ev = JSON.parse(raw); } catch (e) { return fail(res, 400, 'Bad payload.'); }
-    if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') creditPayment(ev.data && ev.data.object);
-    return json(res, 200, { received: true });
-  }
-  if (route === '/api/news') return json(res, 200, { news: DB.news.slice(-20).reverse(), patch: G.PATCH_NOTES, version: G.VERSION });
-  if (route === '/api/top') {
-    const top = Object.entries(DB.users).map(([u, r]) => ({ name: r.name, tb: r.save.tb || 0 })).filter(x => x.tb > 0).sort((a, b) => b.tb - a.tb).slice(0, 10);
-    return json(res, 200, { top });
-  }
-  if (route === '/api/signup' || route === '/api/login') {
-    if (limited(req)) return fail(res, 429, 'Too many attempts. Wait a few minutes.');
-    const b = await body(req), u = String(b.username || '').toLowerCase(), pw = String(b.password || '');
-    if (!/^[a-z0-9_]{3,16}$/.test(u)) return fail(res, 400, 'Username: 3 to 16 letters, numbers or underscores.');
-    if (pw.length < 6 || pw.length > 100) return fail(res, 400, 'Password needs at least 6 characters.');
-    let rec = DB.users[u], mail = null;
-    if (route === '/api/signup') {
-      const name = String(b.name || '').trim().slice(0, 20), email = String(b.email || '').trim().toLowerCase(), dob = String(b.dob || '');
-      if (!name) return fail(res, 400, 'Enter your name.');
-      if (rec) return fail(res, 409, 'That username is taken.');
-      if (!isAdmin(u)) { if (!validEmail(email)) return fail(res, 400, 'Enter a valid email address.'); if (!validDob(dob)) return fail(res, 400, 'Enter your real date of birth.'); if (DB.emails[email]) return fail(res, 409, 'That email is already used.'); }
-      const salt = crypto.randomBytes(16).toString('hex');
-      rec = DB.users[u] = { name, salt, hash: (await scrypt(pw, salt)).toString('hex'), email: validEmail(email) ? email : '', dob: validDob(dob) ? dob : '', verified: isAdmin(u), vc: null, fr: { f: [], in: [], out: [] }, created: Date.now(), save: cleanSave(b.save || {}, newSave()) };
-      if (rec.email) DB.emails[rec.email] = u;
-      if (!rec.verified && rec.email) mail = await sendCode(rec, u);
-      persist();
-    } else {
-      const ok = rec && crypto.timingSafeEqual(await scrypt(pw, rec.salt), Buffer.from(rec.hash, 'hex'));
-      if (!ok) return fail(res, 401, 'Wrong username or password.');
+function startFloor(room) {
+  room.phase = 'fight'; room.seed = Date.now() % 233280;
+  const b = G.bossFor(room.floor, room.n);
+  room.boss = b.n; room.bossHp = b.hp0; room.bossMax = b.hp0; room.evs = []; room.ev = 0; room.gain = 0;
+  for (const p of room.players) {
+    p.dead = false; p.dealt = 0; p.picked = null;
+    const rec = DB.users[p.u], sv = rec ? rec.save : null;
+    if (sv) {
+      sv.eq = G.validEq(sv.eq, [...sv.owned, ...sv.gl], 1);
+      p.eq = sv.eq;
+      p.mx = G.maxHp(sv.hpup, 1);
+      p.hp = p.mx;
     }
-    const token = crypto.randomBytes(24).toString('hex');
-    DB.sessions[sha(token)] = { u, t: Date.now() }; persist();
-    return json(res, 200, Object.assign({ token }, full(rec, u), extras(rec), mail ? { devCode: mail.devCode, mailSent: mail.sent } : {}));
   }
+}
 
-  const t = (req.headers.authorization || '').replace('Bearer ', '') || url.searchParams.get('token') || '';
-  const sess = t && DB.sessions[sha(t)];
-  const rec = sess && Date.now() - sess.t < 60 * 86400000 ? DB.users[sess.u] : null;
-  if (!rec) return fail(res, 401, 'Please log in.');
-  const me = sess.u; rec.seen = Date.now(); const sv = rec.save;
-  const cp = caps(rec, me);
-
-  if (route === '/api/me') return json(res, 200, Object.assign(full(rec, me), extras(rec)));
-  if (route === '/api/logout') { delete DB.sessions[sha(t)]; persist(); return json(res, 200, {}); }
-  if (route === '/api/save') { const b = await body(req); rec.save = cleanSave(b, rec.save, userRoom.has(me)); persist(); return json(res, 200, { save: rec.save, customs: allCustoms(rec.save) }); }
-
-  // ----- email verification and profile -----
-  if (route === '/api/verify') {
-    const b = await body(req), vc = rec.vc;
-    if (rec.verified) return json(res, 200, { user: userInfo(rec, me) });
-    if (!vc || Date.now() > vc.exp) return fail(res, 400, 'That code expired. Send a new one.');
-    if (vc.tries >= 5) return fail(res, 429, 'Too many tries. Send a new code.');
-    vc.tries++; if (sha(String(b.code || '').trim() + me) !== vc.h) { persist(); return fail(res, 400, 'Wrong code.'); }
-    rec.verified = true; rec.vc = null; persist(); return json(res, 200, { user: userInfo(rec, me) });
+function finishTower(room) {
+  room.phase = 'over';
+  for (const p of room.players) {
+    const rec = DB.users[p.u]; if (!rec) continue;
+    if (room.floor > (rec.save.tb || 0)) rec.save.tb = room.floor;
+    rec.save.rev++;
   }
-  if (route === '/api/verify/resend') {
-    if (rec.verified || !rec.email) return fail(res, 400, 'Nothing to verify.');
-    if (rec.vc && Date.now() - rec.vc.last < 60000) return fail(res, 429, 'Wait a minute before asking for another code.');
-    const m = await sendCode(rec, me); return json(res, 200, { mailSent: m.sent, devCode: m.devCode });
-  }
-  if (route === '/api/profile') {
-    const b = await body(req), email = String(b.email || '').trim().toLowerCase(), dob = String(b.dob || '');
-    if (rec.email && rec.dob) return fail(res, 400, 'Your profile is already set.');
-    if (!validEmail(email)) return fail(res, 400, 'Enter a valid email address.');
-    if (!validDob(dob)) return fail(res, 400, 'Enter your real date of birth.');
-    if (DB.emails[email] && DB.emails[email] !== me) return fail(res, 409, 'That email is already used.');
-    rec.email = email; rec.dob = dob; rec.verified = false; DB.emails[email] = me; const m = await sendCode(rec, me);
-    return json(res, 200, { user: userInfo(rec, me), mailSent: m.sent, devCode: m.devCode });
-  }
+  persist(); broadcast(room);
+}
 
-  // ----- daily reward -----
-  if (route === '/api/daily') {
-    const d = today(); if (sv.daily === d) return fail(res, 409, 'You already claimed today.');
-    const y = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    sv.streak = sv.daily === y ? sv.streak + 1 : 1; sv.daily = d;
-    const coins = 50 + 25 * Math.min(sv.streak, 7), dia = sv.cl1 ? 2 * Math.min(sv.streak, 5) : 0;
-    sv.coins += coins; sv.dia += dia; sv.rev++; persist();
-    return json(res, 200, { coins, dia, streak: sv.streak, save: sv });
+// Cleanup inactive rooms every 60 seconds
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms) {
+    if (now - room.ts > 300000 || room.players.every(p => p.off && now - room.ts > 60000)) {
+      for (const p of room.players) userRoom.delete(p.u);
+      rooms.delete(code);
+    }
   }
+}, 60000);
 
-  // ----- gems shop -----
-  if (route === '/api/shop') return json(res, 200, { packs: G.GEM_PACKS, payments: !!(CFG.STRIPE_KEY && CFG.STRIPE_WH && CFG.PUBLIC_URL), canBuy: cp.buy });
-  if (route === '/api/shop/checkout') {
-    if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
-    if (!(CFG.STRIPE_KEY && CFG.STRIPE_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Payments are not set up on this server yet.');
-    const b = await body(req), pack = G.GEM_PACKS.find(x => x.id === b.pack); if (!pack) return fail(res, 400, 'Unknown pack.');
-    const f = new URLSearchParams({ mode: 'payment', success_url: CFG.PUBLIC_URL + '/?paid=1', cancel_url: CFG.PUBLIC_URL + '/?paid=0', client_reference_id: me, 'metadata[user]': me, 'metadata[pack]': pack.id,
-      'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'usd', 'line_items[0][price_data][unit_amount]': String(pack.cents), 'line_items[0][price_data][product_data][name]': pack.gems + ' Forgebound Gems' });
+// ---------- CREEM PAYMENT GATEWAY ENGINE ----------
+function verifyCreemSignature(rawBody, signature, secret) {
+  if (!signature || !secret) return false;
+  try {
+    const hmac = crypto.createHmac('sha256', secret);
+    const digest = hmac.update(rawBody).digest('hex');
+    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
+  } catch (e) {
+    return false;
+  }
+}
+
+async function handleCreateCheckout(req, res, user) {
+  const b = await body(req);
+  const pack = G.GEM_PACKS.find(p => p.id === b.packId);
+  if (!pack) return fail(res, 400, 'Invalid gem pack');
+
+  if (CFG.CREEM_API_KEY) {
     try {
-      const r = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.STRIPE_KEY, 'Content-Type': 'application/x-www-form-urlencoded' }, body: f });
-      const j = await r.json(); if (!r.ok || !j.url) return fail(res, 502, 'Could not start checkout.'); return json(res, 200, { url: j.url });
-    } catch (e) { return fail(res, 502, 'Could not reach the payment provider.'); }
-  }
-  if (route === '/api/gems/buy') {
-    if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
-    const b = await body(req);
-    if (b.kind === 'fx') {
-      const f = G.FX.find(x => x.id === b.id); if (!f) return fail(res, 400, 'Unknown effect.'); if (sv.fxo.includes(f.id)) return fail(res, 409, 'You already own that.');
-      if (sv.gems < f.g) return fail(res, 402, 'Not enough gems.'); sv.gems -= f.g; sv.fxo.push(f.id);
-    } else {
-      const it = gemItem(+b.id); if (!it) return fail(res, 400, 'Unknown item.'); if (sv.gl.includes(it.id)) return fail(res, 409, 'You already own that.');
-      if (sv.gems < it.gp) return fail(res, 402, 'Not enough gems.'); sv.gems -= it.gp; sv.gl.push(it.id);
+      const response = await fetch('https://api.creem.io/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          'x-api-key': CFG.CREEM_API_KEY,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          product_id: pack.productId,
+          metadata: { username: user, pack_id: pack.id },
+          success_url: `${CFG.PUBLIC_URL}/?payment=success`,
+          cancel_url: `${CFG.PUBLIC_URL}/?payment=cancelled`
+        })
+      });
+
+      const data = await response.json();
+      const checkoutUrl = data.checkout_url || data.url;
+
+      if (response.ok && checkoutUrl) {
+        return json(res, 200, { url: checkoutUrl });
+      }
+    } catch (err) {
+      console.error('Creem API checkout error, falling back to direct URL:', err);
     }
-    sv.rev++; persist(); return json(res, 200, { save: sv });
   }
 
-  // ----- friends, chat, trading (verified, 13+) -----
-  if (route.startsWith('/api/friends') || route.startsWith('/api/chat') || route.startsWith('/api/trade')) {
-    if (!cp.social) return fail(res, 403, 'Friends, chat and trading need a verified email and age 13 or older.');
-    const fr = rec.fr = rec.fr || { f: [], in: [], out: [] };
-    const nm = u => (DB.users[u] || {}).name || u, online = u => Date.now() - ((DB.users[u] || {}).seen || 0) < 60000;
-    const ok2 = u => DB.users[u] && caps(DB.users[u], u).social;
-    if (route === '/api/friends') return json(res, 200, { friends: fr.f.map(u => ({ u, name: nm(u), online: online(u) })), incoming: fr.in.map(u => ({ u, name: nm(u) })), outgoing: fr.out.map(u => ({ u, name: nm(u) })) });
-    const b = req.method === 'POST' ? await body(req) : {};
-    if (route === '/api/friends/request') {
-      const o = String(b.username || '').toLowerCase(), other = DB.users[o];
-      if (!other || o === me) return fail(res, 404, 'No player with that username.');
-      if (!ok2(o)) return fail(res, 403, 'That player cannot use friends.');
-      if (fr.f.includes(o)) return fail(res, 409, 'You are already friends.');
-      other.fr = other.fr || { f: [], in: [], out: [] };
-      if (fr.in.includes(o)) { fr.in = fr.in.filter(x => x !== o); other.fr.out = other.fr.out.filter(x => x !== me); fr.f.push(o); other.fr.f.push(me); persist(); return json(res, 200, { accepted: true }); }
-      if (!fr.out.includes(o)) { if (fr.out.length >= 30) return fail(res, 429, 'Too many pending requests.'); fr.out.push(o); other.fr.in.push(me); }
-      persist(); return json(res, 200, { ok: true });
-    }
-    if (route === '/api/friends/accept' || route === '/api/friends/decline' || route === '/api/friends/remove') {
-      const o = String(b.username || '').toLowerCase(), other = DB.users[o]; if (!other) return fail(res, 404, 'No such player.');
-      other.fr = other.fr || { f: [], in: [], out: [] };
-      if (route === '/api/friends/accept') { if (!fr.in.includes(o)) return fail(res, 400, 'No request from that player.'); fr.in = fr.in.filter(x => x !== o); other.fr.out = other.fr.out.filter(x => x !== me); fr.f.push(o); other.fr.f.push(me); }
-      else if (route === '/api/friends/decline') { fr.in = fr.in.filter(x => x !== o); other.fr.out = other.fr.out.filter(x => x !== me); }
-      else { fr.f = fr.f.filter(x => x !== o); other.fr.f = other.fr.f.filter(x => x !== me); }
-      persist(); return json(res, 200, { ok: true });
-    }
-    if (route === '/api/friends/items') {
-      const o = String(url.searchParams.get('with') || '').toLowerCase(), other = DB.users[o];
-      if (!fr.f.includes(o) || !other) return fail(res, 403, 'You can only trade with friends.');
-      const pick = (sv, w) => listOf(sv, w).filter(i => tradable(i, w));
-      return json(res, 200, { mine: { w1: pick(sv, 1), w2: sv.cl1 ? pick(sv, 2) : [] }, theirs: { w1: pick(other.save, 1), w2: other.save.cl1 ? pick(other.save, 2) : [] } });
-    }
-    const ck = (a, c) => [a, c].sort().join('|');
-    if (route === '/api/chat') {
-      const o = String(url.searchParams.get('with') || '').toLowerCase(); if (!fr.f.includes(o)) return fail(res, 403, 'You can only chat with friends.');
-      const since = +url.searchParams.get('since') || 0; return json(res, 200, { msgs: (DB.chats[ck(me, o)] || []).filter(m => m.t > since) });
-    }
-    if (route === '/api/chat/send') {
-      const o = String(b.to || '').toLowerCase(), x = String(b.text || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 200);
-      if (!fr.f.includes(o)) return fail(res, 403, 'You can only chat with friends.'); if (!x) return fail(res, 400, 'Type a message.');
-      if (rec.lastChat && Date.now() - rec.lastChat < 800) return fail(res, 429, 'Slow down.'); rec.lastChat = Date.now();
-      const k = ck(me, o), arr = DB.chats[k] = DB.chats[k] || []; arr.push({ f: me, t: Date.now(), x }); if (arr.length > 150) arr.splice(0, arr.length - 150); persist(); return json(res, 200, { ok: true });
-    }
-    if (route === '/api/trades') {
-      const open = Object.values(DB.trades).filter(x => x.status === 'open' && (x.from === me || x.to === me)).map(x => ({ ...x, fromName: nm(x.from), toName: nm(x.to) }));
-      return json(res, 200, { trades: open });
-    }
-    const chk = (t) => {
-      const A = DB.users[t.from], Bq = DB.users[t.to]; if (!A || !Bq) return 'Player missing.';
-      const la = listOf(A.save, t.world), lb = listOf(Bq.save, t.world);
-      for (const i of t.give) if (!tradable(i, t.world) || !la.includes(i) || lb.includes(i)) return 'One of the offered items is no longer available.';
-      for (const i of t.want) if (!tradable(i, t.world) || !lb.includes(i) || la.includes(i)) return 'One of the requested items is no longer available.';
-      return null;
-    };
-    if (route === '/api/trade/offer') {
-      const o = String(b.to || '').toLowerCase(), w = +b.world === 2 ? 2 : 1;
-      if (!fr.f.includes(o)) return fail(res, 403, 'You can only trade with friends.'); if (!ok2(o)) return fail(res, 403, 'That player cannot trade.');
-      const ids = a => [...new Set((Array.isArray(a) ? a : []).map(Number))].slice(0, 4);
-      const tr = { id: DB.nextTrade++, from: me, to: o, world: w, give: ids(b.give), want: ids(b.want), t: Date.now(), status: 'open' };
-      if (!tr.give.length && !tr.want.length) return fail(res, 400, 'Choose something to trade.');
-      if (w === 2 && !sv.cl1) return fail(res, 403, 'You have not unlocked World 2.');
-      const e = chk(tr); if (e) return fail(res, 400, e);
-      if (Object.values(DB.trades).filter(x => x.status === 'open' && x.from === me).length >= 10) return fail(res, 429, 'Too many open offers.');
-      DB.trades[tr.id] = tr; persist(); return json(res, 200, { id: tr.id });
-    }
-    if (route === '/api/trade/accept' || route === '/api/trade/cancel') {
-      const tr = DB.trades[+b.id]; if (!tr || tr.status !== 'open') return fail(res, 404, 'That offer is gone.');
-      if (route === '/api/trade/cancel') { if (tr.from !== me && tr.to !== me) return fail(res, 403, 'Not your offer.'); tr.status = 'cancelled'; persist(); return json(res, 200, { ok: true }); }
-      if (tr.to !== me) return fail(res, 403, 'Only the player who received the offer can accept.');
-      const e = chk(tr); if (e) { tr.status = 'cancelled'; persist(); return fail(res, 400, e); }
-      const A = DB.users[tr.from].save, Bq = DB.users[tr.to].save, la = listOf(A, tr.world), lb = listOf(Bq, tr.world);
-      for (const i of tr.give) { la.splice(la.indexOf(i), 1); lb.push(i); } for (const i of tr.want) { lb.splice(lb.indexOf(i), 1); la.push(i); }
-      A.rev++; Bq.rev++; fixEq(A); fixEq(Bq); tr.status = 'done'; persist(); return json(res, 200, { save: Bq });
-    }
-    return fail(res, 404, 'Unknown route.');
-  }
-
-  // ----- admin -----
-  if (route.startsWith('/api/admin/')) {
-    if (me !== ADMIN) return fail(res, 403, 'Admins only.');
-    if (route === '/api/admin/users') return json(res, 200, { users: Object.entries(DB.users).map(([u, r]) => ({ u, name: r.name })) });
-    const b = await body(req);
-    if (route === '/api/admin/news') {
-      if (b.del) { DB.news = DB.news.filter(n => n.id !== +b.del); persist(); return json(res, 200, { ok: true }); }
-      const title = String(b.title || '').trim().slice(0, 80), text = String(b.text || '').trim().slice(0, 600); if (!title) return fail(res, 400, 'Add a title.');
-      DB.news.push({ id: Date.now(), t: Date.now(), title, text }); persist(); return json(res, 200, { ok: true });
-    }
-    const tu = String(b.username || '').toLowerCase(), target = DB.users[tu]; if (!target) return fail(res, 404, 'No such player.');
-    const ts = target.save;
-    if (route === '/api/admin/give') { const id = +b.part; if (!P[id]) return fail(res, 400, 'No such part.'); giveItem(ts, id); persist(); return json(res, 200, { ok: true }); }
-    if (route === '/api/admin/custom') {
-      const d = cleanCustom(b.part || {}); d.id = DB.nextCustom++; const p = G.addCustom(d); DB.customs[d.id] = p; giveItem(ts, d.id); persist(); return json(res, 200, { part: p });
-    }
-    if (route === '/api/admin/coins') { ts.coins = Math.max(0, Math.min(999999, ts.coins + Math.round(NUM(b.amount, -999999, 999999)))); ts.rev++; persist(); return json(res, 200, { coins: ts.coins }); }
-    if (route === '/api/admin/diamonds') { ts.dia = Math.max(0, Math.min(999999, ts.dia + Math.round(NUM(b.amount, -999999, 999999)))); ts.rev++; persist(); return json(res, 200, { dia: ts.dia }); }
-    if (route === '/api/admin/gems') { ts.gems = Math.max(0, Math.min(999999, ts.gems + Math.round(NUM(b.amount, -999999, 999999)))); persist(); return json(res, 200, { gems: ts.gems }); }
-    if (route === '/api/admin/world') { ts.cl1 = 1; ts.rev++; persist(); return json(res, 200, { ok: true }); }
-    if (route === '/api/admin/anniversary') { annGift(target, true); return json(res, 200, { ok: true }); }
-    if (route === '/api/admin/verify') { target.verified = true; persist(); return json(res, 200, { ok: true }); }
-    return fail(res, 404, 'Unknown route.');
-  }
-
-  // ----- co-op -----
-  if (route === '/api/room/events') {
-    const room = rooms.get(String(url.searchParams.get('code') || '').toLowerCase());
-    const p = room && room.players.find(x => x.u === me);
-    if (!p) return fail(res, 404, 'Room not found.');
-    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-    res.on('error', () => {});
-    if (p.res) { try { p.res.end(); } catch (e) {} }
-    p.res = res; p.off = false; clearTimeout(p.timer);
-    res.write('retry: 2000\n\n');
-    const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch (e) {} }, 20000);
-    req.on('close', () => {
-      clearInterval(ping);
-      if (p.res !== res) return;
-      p.off = true; p.res = null;
-      p.timer = setTimeout(() => removePlayer(room, me), 20000);
-      if (room.phase === 'fight' && room.players.every(q => q.dead)) room.phase = 'over';
-      checkReward(room); broadcast(room);
-    });
-    broadcast(room); return;
-  }
-  if (route === '/api/room/create' || route === '/api/room/join') {
-    if (!cp.coop) return fail(res, 403, 'Co-op needs a verified email and age 8 or older.');
-    const b = await body(req);
-    const old = rooms.get(userRoom.get(me)); if (old) removePlayer(old, me);
-    let room;
-    if (route === '/api/room/create') {
-      const cap = [2, 3, 4].includes(+b.cap) ? +b.cap : 2;
-      room = { code: newCode(), cap, host: me, phase: 'wait', players: [], floor: 0, n: 2, boss: null, bossHp: 0, bossMax: 0, seq: 0, ev: null, evs: [], rew: {}, ts: Date.now() };
-      rooms.set(room.code, room);
-    } else {
-      room = rooms.get(String(b.code || '').toLowerCase());
-      if (!room) return fail(res, 404, 'No room with that code.');
-      if (room.phase !== 'wait') return fail(res, 409, 'That tower already started.');
-      if (room.players.length >= room.cap) return fail(res, 409, 'That room is full.');
-    }
-    const mx = G.maxHp(sv.hpup, 1);
-    room.players.push({ u: me, nm: rec.name, eq: G.validEq(sv.eq, [...sv.owned, ...sv.gl], 1), hp: mx, mx, dead: 0, dealt: 0, last: 0, picked: false, res: null, off: false, timer: null });
-    userRoom.set(me, room.code); broadcast(room);
-    return json(res, 200, { code: room.code });
-  }
-  const room = rooms.get(userRoom.get(me)); const rm = () => { if (!room) { fail(res, 404, 'You are not in a room.'); return null; } return room; };
-  if (route.startsWith('/api/room/')) {
-    if (!rm()) return;
-    const mp = room.players.find(p => p.u === me);
-    if (route === '/api/room/leave') { removePlayer(room, me); return json(res, 200, {}); }
-    if (route === '/api/room/start') {
-      if (room.host !== me || room.phase !== 'wait') return fail(res, 403, 'Only the host can start.');
-      if (room.players.length < 2) return fail(res, 400, 'Need at least 2 players.');
-      room.n = room.players.length; startFloor(room, 1); broadcast(room); return json(res, 200, {});
-    }
-    if (route === '/api/room/swing') {
-      if (room.phase !== 'fight' || mp.dead) return fail(res, 409, 'You cannot swing right now.');
-      const s = G.stats(mp.eq), now = Date.now();
-      if (now - mp.last < Math.max(650, 1000 / s.spd) - 300) return fail(res, 429, 'Too fast.');
-      mp.last = now;
-      const { d, t } = G.dmg(s, room.boss.w, Math.random), rc = G.recoil(room.boss.r, s.def);
-      room.bossHp = Math.max(0, room.bossHp - d); mp.dealt += d;
-      if (s.life) mp.hp = Math.min(mp.mx, mp.hp + Math.min(Math.round(d * s.life), Math.floor(rc * 0.6)));
-      mp.hp -= rc; if (mp.hp <= 0) { mp.hp = 0; mp.dead = 1; }
-      room.ev = { seq: ++room.seq, by: mp.u, d, t, rec: rc }; room.evs.push(room.ev); if (room.evs.length > 12) room.evs.shift();
-      if (room.bossHp <= 0) { room.phase = 'reward'; rollRewards(room); }
-      else if (room.players.every(p => p.dead)) room.phase = 'over';
-      broadcast(room); return json(res, 200, { ok: true, seq: room.seq });
-    }
-    if (route === '/api/room/reward') {
-      const b = await body(req), id = +b.id;
-      if (room.phase !== 'reward' || mp.picked) return fail(res, 409, 'Nothing to pick.');
-      if (id !== -1 && !(room.rew[me] || []).includes(id)) return fail(res, 400, 'Invalid reward.');
-      if (id !== -1 && !sv.owned.includes(id)) { sv.owned.push(id); sv.rev++; }
-      mp.picked = true; persist(); checkReward(room); broadcast(room);
-      return json(res, 200, { owned: sv.owned, rev: sv.rev });
-    }
-  }
-  return fail(res, 404, 'Unknown route.');
+  const checkoutUrl = `${pack.url}?custom_username=${encodeURIComponent(user)}&custom_pack=${pack.id}`;
+  json(res, 200, { url: checkoutUrl });
 }
 
-// ---------- static: index.html and the shared rules ----------
-function serveStatic(req, res, url) {
-  if (url.pathname === '/shared.js') { res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(SHARED); }
-  if (url.pathname !== '/' && url.pathname !== '/index.html') return fail(res, 404, 'Not found');
-  fs.readFile(path.join(__dirname, 'index.html'), (e, data) => {
-    if (e) return fail(res, 500, 'index.html is missing. Put it in the same folder as server.js.');
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(data);
-  });
+async function handlePaymentWebhook(req, res) {
+  try {
+    const rawText = await readBody(req, 100000);
+    const sigHeader = req.headers['x-creem-signature'] || req.headers['x-signature'];
+
+    if (CFG.CREEM_WEBHOOK_SECRET && !verifyCreemSignature(rawText, sigHeader, CFG.CREEM_WEBHOOK_SECRET)) {
+      return fail(res, 400, 'Invalid signature');
+    }
+
+    const payload = JSON.parse(rawText);
+    const event = payload.event || payload.type || '';
+
+    if (event === 'checkout.completed' || event === 'order.paid' || event === 'payment.succeeded') {
+      const data = payload.data || payload.object || payload;
+      const orderId = String(data.id || data.order_id || Date.now());
+
+      if (DB.paid[orderId]) {
+        return json(res, 200, { status: 'already_processed' });
+      }
+
+      const meta = data.metadata || data.custom_fields || {};
+      const username = meta.username || meta.custom_username || data.customer_custom_username;
+      const packId = meta.pack_id || meta.custom_pack;
+
+      const userRec = DB.users[username];
+      const pack = G.GEM_PACKS.find(p => p.id === packId || p.productId === data.product_id);
+
+      if (userRec && pack) {
+        userRec.save.gems = (userRec.save.gems || 0) + pack.gems;
+        userRec.save.rev = (userRec.save.rev || 0) + 1;
+
+        DB.paid[orderId] = {
+          user: username,
+          packId: pack.id,
+          gems: pack.gems,
+          paidAt: Date.now()
+        };
+
+        persist();
+      }
+    }
+
+    json(res, 200, { status: 'ok' });
+  } catch (err) {
+    console.error('Webhook error:', err);
+    fail(res, 500, 'Webhook processing failed');
+  }
 }
-http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x');
-  try { if (url.pathname.startsWith('/api/')) await handleApi(req, res, url); else serveStatic(req, res, url); }
-  catch (e) { console.error(e); if (!res.headersSent) fail(res, 400, 'Bad request.'); }
-}).listen(PORT, () => console.log('Forgebound ' + G.VERSION + ' running on port ' + PORT));
+
+// ---------- HTTP SERVER & API ROUTES ----------
+const server = http.createServer(async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  if (req.method === 'OPTIONS') { res.writeHead(200); return res.end(); }
+
+  const url = new URL(req.url, 'http://localhost');
+  const pathname = url.pathname;
+
+  if (pathname === '/api/payment/webhook' && req.method === 'POST') {
+    return handlePaymentWebhook(req, res);
+  }
+
+  let user = null;
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    const tok = auth.slice(7);
+    const s = DB.sessions[tok];
+    if (s && s.exp > Date.now()) user = s.user;
+  }
+
+  if (pathname === '/api/register' && req.method === 'POST') {
+    if (limited(req, 10)) return fail(res, 429, 'Too many attempts');
+    const b = await body(req);
+    const u = String(b.username || '').trim().toLowerCase();
+    const pw = String(b.password || '');
+    if (!/^[a-z0-9_]{3,16}$/.test(u)) return fail(res, 400, 'Invalid username');
+    if (pw.length < 6) return fail(res, 400, 'Password too short');
+    if (DB.users[u]) return fail(res, 400, 'Username taken');
+
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = (await scrypt(pw, salt)).toString('hex');
+    DB.users[u] = { name: u, pass: hash, salt, save: newSave() };
+    
+    const tok = crypto.randomBytes(32).toString('hex');
+    DB.sessions[tok] = { user: u, exp: Date.now() + 30 * 86400000 };
+    persist();
+    return json(res, 200, { token: tok, ...full(DB.users[u], u), ...extras(DB.users[u]) });
+  }
+
+  if (pathname === '/api/login' && req.method === 'POST') {
+    if (limited(req, 10)) return fail(res, 429, 'Too many attempts');
+    const b = await body(req);
+    const u = String(b.username || '').trim().toLowerCase();
+    const pw = String(b.password || '');
+    const rec = DB.users[u];
+    if (!rec) return fail(res, 400, 'Invalid credentials');
+
+    const hash = (await scrypt(pw, rec.salt)).toString('hex');
+    if (hash !== rec.pass) return fail(res, 400, 'Invalid credentials');
+
+    const tok = crypto.randomBytes(32).toString('hex');
+    DB.sessions[tok] = { user: u, exp: Date.now() + 30 * 86400000 };
+    persist();
+    return json(res, 200, { token: tok, ...full(rec, u), ...extras(rec) });
+  }
+
+  if (!user) return fail(res, 401, 'Unauthorized');
+  const rec = DB.users[user];
+
+  if (pathname === '/api/me' && req.method === 'GET') {
+    return json(res, 200, { ...full(rec, user), ...extras(rec) });
+  }
+
+  if (pathname === '/api/save' && req.method === 'POST') {
+    const b = await body(req);
+    rec.save = cleanSave(b, rec.save, userRoom.has(user));
+    persist();
+    return json(res, 200, { save: rec.save });
+  }
+
+  if (pathname === '/api/create-checkout' && req.method === 'POST') {
+    return handleCreateCheckout(req, res, user);
+  }
+
+  if (pathname === '/api/daily' && req.method === 'POST') {
+    const t = today();
+    if (rec.save.daily === t) return fail(res, 400, 'Already claimed today');
+    rec.save.daily = t;
+    rec.save.coins += 100;
+    rec.save.dia += 10;
+    rec.save.rev++;
+    persist();
+    return json(res, 200, { coins: rec.save.coins, dia: rec.save.dia, save: rec.save });
+  }
+
+  if (pathname === '/api/coop/events' && req.method === 'GET') {
+    return joinSSE(req, res, user);
+  }
+
+  if (pathname === '/api/coop/create' && req.method === 'POST') {
+    leaveRoom(user);
+    const code = newCode();
+    const room = { code, cap: 2, host: user, phase: 'lobby', floor: 1, n: 1, players: [], evs: [], ev: 0, rew: {}, ts: Date.now() };
+    rooms.set(code, room);
+    userRoom.set(user, code);
+    room.players.push({ u: user, nm: rec.name, eq: rec.save.eq, hp: 100, mx: 100, dead: false, dealt: 0, off: false });
+    return json(res, 200, { code });
+  }
+
+  if (pathname === '/api/coop/join' && req.method === 'POST') {
+    const b = await body(req);
+    const code = String(b.code || '').trim().toLowerCase();
+    const room = rooms.get(code);
+    if (!room) return fail(res, 404, 'Room not found');
+    if (room.players.length >= room.cap) return fail(res, 400, 'Room full');
+    leaveRoom(user);
+    userRoom.set(user, code);
+    room.players.push({ u: user, nm: rec.name, eq: rec.save.eq, hp: 100, mx: 100, dead: false, dealt: 0, off: false });
+    room.n = room.players.length;
+    broadcast(room);
+    return json(res, 200, { code });
+  }
+
+  if (pathname === '/api/coop/leave' && req.method === 'POST') {
+    leaveRoom(user);
+    return json(res, 200, { ok: true });
+  }
+
+  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath);
+    const map = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+    res.writeHead(200, { 'Content-Type': map[ext] || 'text/plain' });
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  fail(res, 404, 'Not found');
+});
+
+server.listen(PORT, () => {
+  console.log(`Forgebound server listening on port ${PORT}`);
+});
