@@ -1,3 +1,4 @@
+
 'use strict';
 // Forgebound server: accounts (email + age), saves, friends, chat, trading, gems shop, news, co-op tower.
 // Connected to permanent Supabase PostgreSQL cloud storage using native JSONB.
@@ -401,6 +402,8 @@ function creditPayment(sessionId, username, packId, amountCents) {
 
 // ---------- API ----------
 const gemItem = id => P[id] && P[id].gl ? P[id] : null;
+
+// FIX: Added async keyword here
 async function handleApi(req, res, url) {
   const route = url.pathname;
 
@@ -515,7 +518,8 @@ async function handleApi(req, res, url) {
       const j = await r.json(); if (!r.ok || !j.url) return fail(res, 502, 'Could not start checkout.'); return json(res, 200, { url: j.url });
     } catch (e) { return fail(res, 502, 'Could not reach the payment provider.'); }
   }
-// ----- Manual GCash Payment Routes -----
+
+  // ----- Manual GCash Payment Routes -----
   if (route === '/api/shop/gcash-submit') {
     const b = await body(req);
     const ref = String(b.refNo || '').trim();
@@ -582,7 +586,7 @@ async function handleApi(req, res, url) {
 
     return json(res, 200, { success: true, message: 'Payment request rejected.' });
   }
-  }
+
   if (route === '/api/gems/buy') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
     const b = await body(req);
@@ -799,7 +803,7 @@ function serveStatic(req, res, url) {
     res.end(data);
   });
 }
-// AFTER (Fixed)
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try { if (url.pathname.startsWith('/api/')) await handleApi(req, res, url); else serveStatic(req, res, url); }
