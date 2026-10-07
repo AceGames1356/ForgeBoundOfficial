@@ -518,25 +518,49 @@ async function handleApi(req, res, url) {
   if (route === '/api/shop/creem-checkout') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
     if (!(CFG.CREEM_KEY && CFG.CREEM_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Creem payments are not set up on this server.');
-    const b = await body(req), pack = G.GEM_PACKS.find(x => x.id === b.pack); if (!pack) return fail(res, 400, 'Unknown pack.');
+    const b = await body(req);
+    
+    const CREEM_PRODUCTS = {
+      g100:  'prod_6GFfYew5k8dmybqmMpfeNo',
+      g550:  'prod_1by8kcvkn2coI8YVtJtZEu',
+      g1200: 'prod_6ADiXfkLmxmD0Vy8jeB8YU',
+      g2600: 'prod_5dTmCwcsPc8xFRshpAsKf'
+    };
+
+    const productId = CREEM_PRODUCTS[b.pack];
+    if (!productId) return fail(res, 400, 'Unknown or invalid pack selected.');
+
+    const isTestKey = CFG.CREEM_KEY.startsWith('test_');
+    const creemApiUrl = isTestKey 
+      ? 'https://test-api.creem.io/v1/checkouts' 
+      : 'https://api.creem.io/v1/checkouts';
+
     try {
-      const r = await fetch('https://api.creem.io/v1/checkouts', {
+      const r = await fetch(creemApiUrl, {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + CFG.CREEM_KEY, 'Content-Type': 'application/json' },
+        headers: { 
+          'x-api-key': CFG.CREEM_KEY, 
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
-          amount_cents: pack.cents,
-          currency: 'USD',
-          product_name: pack.gems + ' Forgebound Gems',
+          product_id: productId,
+          request_id: `${me}_${Date.now()}`,
           success_url: CFG.PUBLIC_URL + '/?paid=1',
           cancel_url: CFG.PUBLIC_URL + '/?paid=0',
-          metadata: { user: me, pack: pack.id }
+          metadata: { user: me, pack: b.pack }
         })
       });
       const j = await r.json();
       const checkoutUrl = j.checkout_url || j.url;
-      if (!r.ok || !checkoutUrl) return fail(res, 502, 'Could not start Creem checkout.');
+      if (!r.ok || !checkoutUrl) {
+        console.error('Creem error:', j);
+        return fail(res, 502, j.message || 'Could not start Creem checkout.');
+      }
       return json(res, 200, { url: checkoutUrl });
-    } catch (e) { return fail(res, 502, 'Could not reach Creem payment server.'); }
+    } catch (e) { 
+      console.error('Creem reach error:', e);
+      return fail(res, 502, 'Could not reach Creem payment server.'); 
+    }
   }
   if (route === '/api/gems/buy') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
