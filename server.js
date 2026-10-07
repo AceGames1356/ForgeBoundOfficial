@@ -337,107 +337,6 @@ const today = () => new Date().toISOString().slice(0, 10);
 const extras = (rec) => ({ gift: annGift(rec), dailyReady: rec.save.daily !== today() });
 const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: allCustoms(rec.save) });
 
-// ---------- CREEM PAYMENT GATEWAY ENGINE ----------
-function verifyCreemSignature(rawBody, signature, secret) {
-  if (!signature || !secret) return false;
-  try {
-    const hmac = crypto.createHmac('sha256', secret);
-    const digest = hmac.update(rawBody).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
-  } catch (e) {
-    return false;
-  }
-}
-
-async function handleCreateCheckout(req, res, user) {
-  const b = await body(req);
-  const pack = G.GEM_PACKS.find(p => p.id === b.packId);
-  if (!pack) return fail(res, 400, 'Invalid gem pack');
-
-  // If Creem API key is configured, generate dynamic checkout session
-  if (CFG.CREEM_API_KEY) {
-    try {
-      const response = await fetch('https://api.creem.io/v1/checkout/sessions', {
-        method: 'POST',
-        headers: {
-          'x-api-key': CFG.CREEM_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: pack.productId,
-          metadata: { username: user, pack_id: pack.id },
-          success_url: `${CFG.PUBLIC_URL}/?payment=success`,
-          cancel_url: `${CFG.PUBLIC_URL}/?payment=cancelled`
-        })
-      });
-
-      const data = await response.json();
-      const checkoutUrl = data.checkout_url || data.url;
-
-      if (response.ok && checkoutUrl) {
-        return json(res, 200, { url: checkoutUrl });
-      }
-    } catch (err) {
-      console.error('Creem API session creation failed, using direct checkout link:', err);
-    }
-  }
-
-  // Direct product URL fallback with custom metadata query parameter
-  const checkoutUrl = `${pack.url}?custom_username=${encodeURIComponent(user)}&custom_pack=${pack.id}`;
-  json(res, 200, { url: checkoutUrl });
-}
-
-async function handlePaymentWebhook(req, res) {
-  try {
-    const rawText = await readBody(req, 100000);
-    const sigHeader = req.headers['x-creem-signature'] || req.headers['x-signature'];
-
-    if (CFG.CREEM_WEBHOOK_SECRET && !verifyCreemSignature(rawText, sigHeader, CFG.CREEM_WEBHOOK_SECRET)) {
-      console.warn('Invalid Creem webhook signature');
-      return fail(res, 400, 'Invalid signature');
-    }
-
-    const payload = JSON.parse(rawText);
-    const event = payload.event || payload.type || '';
-
-    if (event === 'checkout.completed' || event === 'order.paid' || event === 'payment.succeeded') {
-      const data = payload.data || payload.object || payload;
-      const orderId = String(data.id || data.order_id || Date.now());
-
-      if (DB.paid[orderId]) {
-        return json(res, 200, { status: 'already_processed' });
-      }
-
-      const meta = data.metadata || data.custom_fields || {};
-      const username = meta.username || meta.custom_username || data.customer_custom_username;
-      const packId = meta.pack_id || meta.custom_pack;
-
-      const userRec = DB.users[username];
-      const pack = G.GEM_PACKS.find(p => p.id === packId || p.productId === data.product_id);
-
-      if (userRec && pack) {
-        userRec.save.gems = (userRec.save.gems || 0) + pack.gems;
-        userRec.save.rev = (userRec.save.rev || 0) + 1;
-
-        DB.paid[orderId] = {
-          user: username,
-          packId: pack.id,
-          gems: pack.gems,
-          paidAt: Date.now()
-        };
-
-        persist();
-        console.log(`[Creem] Successfully credited ${pack.gems} gems to player: ${username}`);
-      }
-    }
-
-    json(res, 200, { status: 'ok' });
-  } catch (err) {
-    console.error('Error handling Creem payment webhook:', err);
-    fail(res, 500, 'Webhook processing failed');
-  }
-}
-
 // ---------- co-op rooms ----------
 const rooms = new Map(), userRoom = new Map();
 const CODE_CHARS = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -455,8 +354,6 @@ function snapshot(room, u) {
 function broadcast(room) {
   room.ts = Date.now();
   for (const p of room.players) if (p.res && !p.off) { try { p.res.write('data: ' + JSON.stringify(snapshot(room, p.u)) + '\n\n'); } catch (e) { p.off = true; } }
-}
-}
 }
 
 function joinSSE(req, res, u) {
