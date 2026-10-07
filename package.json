@@ -1,0 +1,9 @@
+{
+  "name": "forgebound",
+  "version": "2.0.0",
+  "description": "Forgebound: pixel weapon-crafting boss game with two worlds, friends, trading, gems shop, accounts and co-op tower",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "license": "MIT"
+}
