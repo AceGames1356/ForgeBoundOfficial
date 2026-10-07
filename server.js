@@ -109,8 +109,7 @@ const VERSION='2.0.0';
 const BOSSES=[
 {n:'Slime King',k:'#4fd06a',hp:70,r:4,w:'fire'},{n:'Frost Warden',k:'#7fd6ff',hp:130,r:7,w:'shock'},
 {n:'Hollow Knight',k:'#9aa3b5',hp:210,r:10,w:'blood'},{n:'Storm Wyrm',k:'#ffe14d',hp:300,r:13,w:'ice'},{n:'Anvil God',k:'#ff6b3d',hp:420,r:16,w:'void'},
-{n:'Venom Hydra',k:'#4fb04a',hp:560,r:19,w:'toxic'},{n:'Crimson Warlord',k:'#e0455a',hp:760,r:23,w:'blood'},
-{n:'Abyss Leviathan',k:'#2d6fa8',hp:1000,r:28,w:'shock'},{n:'Solar Titan',k:'#e8b73a',hp:1350,r:34,w:'ice'},
+{n:'Venom Hydra',k:'#4fb04a',hp:560,r:19,w:'toxic'},{n:'Crimson Warlord',k:'#e0455a',hp:760,r:23,w:'blood'},{n:'Abyss Leviathan',k:'#2d6fa8',hp:1000,r:28,w:'shock'},{n:'Solar Titan',k:'#e8b73a',hp:1350,r:34,w:'ice'},
 {n:'Void Emperor',k:'#7a4be0',hp:1800,r:39,w:'fire'},{n:'Seraph Sentinel',k:'#f4eec8',hp:2500,r:43,w:'void'},{n:'The Final God',k:'#fff3b0',hp:3500,r:49,w:'toxic'}];
 
 const WORLD2=[
@@ -149,15 +148,7 @@ const recoil=(r,d,f)=>Math.max(Math.ceil(r*(f||.25)),r-d);
 function dmg(s,weak,rnd){let d=s.atk*(.85+rnd()*.3),t=0;if(rnd()<s.crit){d*=2;t=1}if(s.e===weak){d*=1.8;t=1}return{d:Math.round(d),t}}
 function validEq(eq,owned,w){const E={},D=w==2?W2BASE:W1BASE;SLOTS.forEach((k,i)=>{const id=eq&&eq[k],p=P[id];E[k]=p&&p.s===k&&owned.includes(id)&&(p.gl||!!p.wd==(w==2))?id:D[i]});return E}
 const FX=[{id:'rainbow',n:'Rainbow Slash',c:'#ff7ac8',g:150},{id:'ember',n:'Ember Aura',c:'#ff7a3d',g:100},{id:'frost',n:'Frost Trail',c:'#7fd6ff',g:100},{id:'gold',n:'Golden Sparks',c:'#ffd84d',g:120},{id:'void',n:'Void Glow',c:'#a66bff',g:120},{id:'toxic',n:'Toxic Mist',c:'#7be04f',g:100},{id:'blood',n:'Blood Moon',c:'#e0345a',g:120},{id:'holy',n:'Holy Light',c:'#ffffff',g:200}];
-
-// CREEM CONFIGURATION
-const GEM_PACKS=[
-  {id:'g100',gems:100,cents:99,productId:'prod_6GFfYew5k8dmybqmMpfeNo',url:'https://www.creem.io/payment/prod_6GFfYew5k8dmybqmMpfeNo'},
-  {id:'g550',gems:550,cents:499,productId:'prod_1by8kcvkn2coI8YVtJtZEu',url:'https://www.creem.io/payment/prod_1by8kcvkn2coI8YVtJtZEu'},
-  {id:'g1200',gems:1200,cents:999,productId:'prod_6ADiXfkLmxmD0Vy8jeB8YU',url:'https://www.creem.io/payment/prod_6ADiXfkLmxmD0Vy8jeB8YU'},
-  {id:'g2600',gems:2600,cents:1999,productId:'prod_5dTmCwcsPc8xFRshpAsKf',url:'https://www.creem.io/payment/prod_5dTmCwcsPc8xFRshpAsKf'}
-];
-
+const GEM_PACKS=[{id:'g100',gems:100,cents:99},{id:'g550',gems:550,cents:499},{id:'g1200',gems:1200,cents:999},{id:'g2600',gems:2600,cents:1999}];
 const PATCH_NOTES=[
 {v:'2.0.0',d:'Oct 2026',t:['New battle screens for boss fights and the co-op tower: big boss stage, health bars with numbers, a swing cooldown bar, and a Retreat button.','World 2 with its cutscene, diamonds, minigames, the ViLocity boss, the boss map, the anniversary event and the New run fix.','World 2 is now its own game: its own starter gear, parts, shop and health upgrades. Your World 1 items stay in World 1.','Travel between worlds any time from the Map. Repeat any boss you have beaten for coins, diamonds and part drops.','World 2 bosses are much easier early on, and ViLocity can be beaten.','124+ new weapon attachments across both worlds, plus Prism super items.','Friends: add friends, chat and trade parts (World 1 parts in World 1, World 2 parts in World 2).','Gems: buy with real money, spend on Prism items and effects that work in both worlds.','New home screen and a compact layout so you scroll less, new colour themes, and this news screen.','Accounts: email verification and date of birth. Co-op needs age 8+ and chat, trading and buying need age 13+.','Fixed co-op tower: a teammate could get stuck unable to attack.','Daily reward, How to play guide, tower leaderboard.']},
 {v:'1.0.0',d:'Sep 2026',t:['Forgebound launches: forge weapons, 12 bosses, shop, accounts, admin panel and the co-op tower.']}];
@@ -171,8 +162,7 @@ const PORT = process.env.PORT || 3000;
 const ADMIN = String(process.env.ADMIN_USER || 'vilocity').toLowerCase();
 const CFG = {
   PUBLIC_URL: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
-  CREEM_API_KEY: process.env.CREEM_API_KEY || '',
-  CREEM_WEBHOOK_SECRET: process.env.CREEM_WEBHOOK_SECRET || '',
+  STRIPE_KEY: process.env.STRIPE_SECRET_KEY || '', STRIPE_WEBHOOK: process.env.STRIPE_WEBHOOK_SECRET || '',
   RESEND: process.env.RESEND_API_KEY || '', FROM: process.env.EMAIL_FROM || 'Forgebound <onboarding@resend.dev>',
   DEV_CODE: process.env.DEV_SHOW_CODE === '1'
 };
@@ -284,6 +274,18 @@ function cleanSave(b, old, inRoom) {
     hpup: int(b.hpup, 5), hpup2: int(b.hpup2, 5), cl1, world: cl1 && b.world == 2 ? 2 : 1, fx
   });
 }
+function cleanCustom(d) {
+  const s = ['h', 'b', 'g', 'c'].includes(d.s) ? d.s : 'b';
+  const o = { s, n: String(d.n || 'Custom item').trim().slice(0, 24) || 'Custom item', t: Math.round(NUM(d.t, 0, 6)), c: /^#[0-9a-f]{6}$/i.test(d.c) ? d.c : '#cccccc',
+    atk: NUM(d.atk, -50, 999), spd: NUM(d.spd, -0.5, 3), def: NUM(d.def, -50, 99), crit: NUM(d.crit, 0, 1), life: NUM(d.life, 0, 1) };
+  if (+d.world === 2) o.wd = 1;
+  if (s === 'c') o.e = ['fire', 'ice', 'shock', 'blood', 'void', 'toxic', 'holy'].includes(d.e) ? d.e : 'fire';
+  if (s === 'g') { o.w = Math.round(NUM(d.w, 14, 30)); if (['spike', 'wing'].includes(d.dc)) o.dc = d.dc; }
+  if (s === 'b') { const a = Array.isArray(d.sh) ? d.sh.map(Number) : [30, 3, 5]; o.sh = [Math.round(NUM(a[0], 10, 37)), Math.round(NUM(a[1], 1, 7)), Math.round(NUM(a[2], 1, 8))]; }
+  return o;
+}
+const customsFor = ids => ids.filter(i => i >= 1000 && DB.customs[i]).map(i => DB.customs[i]);
+const allCustoms = sv => customsFor([...sv.owned, ...sv.owned2, ...Object.values(sv.eq), ...Object.values(sv.eq2)]);
 
 // ---------- ages, email, caps ----------
 function ageOf(dob) {
@@ -295,6 +297,21 @@ function ageOf(dob) {
 const isAdmin = u => u === ADMIN;
 const caps = (rec, u) => { const a = ageOf(rec.dob), v = isAdmin(u) || rec.verified; return { coop: !!(isAdmin(u) || (v && a !== null && a >= MIN_COOP)), social: !!(isAdmin(u) || (v && a !== null && a >= MIN_SOCIAL)), buy: !!(isAdmin(u) || (v && a !== null && a >= MIN_BUY)) }; };
 const userInfo = (rec, u) => ({ username: u, name: rec.name, verified: !!(rec.verified || isAdmin(u)), needsInfo: !isAdmin(u) && (!rec.email || !rec.dob), age: ageOf(rec.dob), caps: caps(rec, u) });
+async function sendMail(to, subject, text) {
+  if (CFG.RESEND) {
+    try { const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: CFG.FROM, to: [to], subject, text }) }); return r.ok; }
+    catch (e) { return false; }
+  }
+  console.log('[mail:dev] to', to, '|', subject, '|', text); return null;
+}
+async function sendCode(rec, u) {
+  const code = String(crypto.randomInt(100000, 1000000));
+  rec.vc = { h: sha(code + u), exp: Date.now() + 15 * 60000, tries: 0, last: Date.now() }; persist();
+  const sent = await sendMail(rec.email, 'Your Forgebound verification code', `Your Forgebound verification code is ${code}. It expires in 15 minutes. If you did not create this account, ignore this email.`);
+  return { sent, devCode: CFG.DEV_CODE ? code : undefined };
+}
+const validEmail = e => /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/.test(e) && e.length <= 120;
+const validDob = d => { const a = ageOf(d); return a !== null && a >= 3 && a <= 110 && !isNaN(Date.parse(d)); };
 
 // ---------- anniversary + daily ----------
 function grantPerm(sv, ids) { for (const i of ids) { if (!sv.perm.includes(i)) sv.perm.push(i); const L = P[i].wd ? sv.owned2 : sv.owned; if (!L.includes(i)) L.push(i); } }
@@ -307,7 +324,7 @@ function annGift(rec, force) {
 }
 const today = () => new Date().toISOString().slice(0, 10);
 const extras = (rec) => ({ gift: annGift(rec), dailyReady: rec.save.daily !== today() });
-const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: [] });
+const full = (rec, u) => ({ user: userInfo(rec, u), save: rec.save, customs: allCustoms(rec.save) });
 
 // ---------- co-op rooms ----------
 const rooms = new Map(), userRoom = new Map();
@@ -319,7 +336,7 @@ function snapshot(room, u) {
     code: room.code, cap: room.cap, host: room.host, phase: room.phase, floor: room.floor, n: room.n,
     boss: room.boss, bossHp: room.bossHp, bossMax: room.bossMax,
     players: room.players.map(p => ({ u: p.u, nm: p.nm, eq: p.eq, hp: p.hp, mx: p.mx, dead: p.dead, dealt: p.dealt, off: p.off, picked: p.picked })),
-    cu: [], ev: room.ev, evs: room.evs, gain: room.gain || 0,
+    cu: customsFor([...new Set(room.players.flatMap(p => Object.values(p.eq)))]), ev: room.ev, evs: room.evs, gain: room.gain || 0,
     coins: rec ? rec.save.coins : 0, rew: room.rew[u] || [], best: rec ? rec.save.tb || 0 : 0
   };
 }
@@ -348,90 +365,41 @@ function leaveRoom(u) {
   broadcast(room);
 }
 
-// ---------- CREEM PAYMENT ENGINE ----------
-function verifyCreemSignature(rawBody, signature, secret) {
-  if (!signature || !secret) return false;
-  try {
-    const hmac = crypto.createHmac('sha256', secret);
-    const digest = hmac.update(rawBody).digest('hex');
-    return crypto.timingSafeEqual(Buffer.from(digest), Buffer.from(signature));
-  } catch (e) {
-    return false;
+function startFloor(room) {
+  room.phase = 'fight'; room.seed = Date.now() % 233280;
+  const b = G.bossFor(room.floor, room.n);
+  room.boss = b.n; room.bossHp = b.hp0; room.bossMax = b.hp0; room.evs = []; room.ev = 0; room.gain = 0;
+  for (const p of room.players) {
+    p.dead = false; p.dealt = 0; p.picked = null;
+    const rec = DB.users[p.u], sv = rec ? rec.save : null;
+    if (sv) {
+      sv.eq = G.validEq(sv.eq, [...sv.owned, ...sv.gl], 1);
+      p.eq = sv.eq;
+      p.mx = G.maxHp(sv.hpup, 1);
+      p.hp = p.mx;
+    }
   }
 }
 
-async function handleCreateCheckout(req, res, user) {
-  const b = await body(req);
-  const pack = G.GEM_PACKS.find(p => p.id === b.packId);
-  if (!pack) return fail(res, 400, 'Invalid gem pack');
-
-  if (CFG.CREEM_API_KEY) {
-    try {
-      const response = await fetch('https://api.creem.io/v1/checkout/sessions', {
-        method: 'POST',
-        headers: {
-          'x-api-key': CFG.CREEM_API_KEY,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          product_id: pack.productId,
-          metadata: { username: user, pack_id: pack.id },
-          success_url: `${CFG.PUBLIC_URL}/?payment=success`,
-          cancel_url: `${CFG.PUBLIC_URL}/?payment=cancelled`
-        })
-      });
-
-      const data = await response.json();
-      const checkoutUrl = data.checkout_url || data.url;
-      if (response.ok && checkoutUrl) return json(res, 200, { url: checkoutUrl });
-    } catch (err) {
-      console.error('Creem API session creation failed, using fallback URL:', err);
-    }
+function finishTower(room) {
+  room.phase = 'over';
+  for (const p of room.players) {
+    const rec = DB.users[p.u]; if (!rec) continue;
+    if (room.floor > (rec.save.tb || 0)) rec.save.tb = room.floor;
+    rec.save.rev++;
   }
-
-  const checkoutUrl = `${pack.url}?custom_username=${encodeURIComponent(user)}&custom_pack=${pack.id}`;
-  json(res, 200, { url: checkoutUrl });
+  persist(); broadcast(room);
 }
 
-async function handlePaymentWebhook(req, res) {
-  try {
-    const rawText = await readBody(req, 100000);
-    const sigHeader = req.headers['x-creem-signature'] || req.headers['x-signature'];
-
-    if (CFG.CREEM_WEBHOOK_SECRET && !verifyCreemSignature(rawText, sigHeader, CFG.CREEM_WEBHOOK_SECRET)) {
-      return fail(res, 400, 'Invalid signature');
+setInterval(() => {
+  const now = Date.now();
+  for (const [code, room] of rooms) {
+    if (now - room.ts > 300000 || room.players.every(p => p.off && now - room.ts > 60000)) {
+      for (const p of room.players) userRoom.delete(p.u);
+      rooms.delete(code);
     }
-
-    const payload = JSON.parse(rawText);
-    const event = payload.event || payload.type || '';
-
-    if (event === 'checkout.completed' || event === 'order.paid' || event === 'payment.succeeded') {
-      const data = payload.data || payload.object || payload;
-      const orderId = String(data.id || data.order_id || Date.now());
-
-      if (DB.paid[orderId]) return json(res, 200, { status: 'already_processed' });
-
-      const meta = data.metadata || data.custom_fields || {};
-      const username = meta.username || meta.custom_username || data.customer_custom_username;
-      const packId = meta.pack_id || meta.custom_pack;
-
-      const userRec = DB.users[username];
-      const pack = G.GEM_PACKS.find(p => p.id === packId || p.productId === data.product_id);
-
-      if (userRec && pack) {
-        userRec.save.gems = (userRec.save.gems || 0) + pack.gems;
-        userRec.save.rev = (userRec.save.rev || 0) + 1;
-        DB.paid[orderId] = { user: username, packId: pack.id, gems: pack.gems, paidAt: Date.now() };
-        persist();
-      }
-    }
-
-    json(res, 200, { status: 'ok' });
-  } catch (err) {
-    console.error('Webhook processing error:', err);
-    fail(res, 500, 'Webhook error');
   }
-}
+}, 60000);
 
 // ---------- HTTP SERVER & API ROUTES ----------
 const server = http.createServer(async (req, res) => {
@@ -443,9 +411,13 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
 
-  // 1. PUBLIC WEBHOOK
-  if (pathname === '/api/payment/webhook' && req.method === 'POST') {
-    return handlePaymentWebhook(req, res);
+  // 1. PUBLIC STATIC FILES
+  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath);
+    const map = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+    res.writeHead(200, { 'Content-Type': map[ext] || 'text/plain' });
+    return fs.createReadStream(filePath).pipe(res);
   }
 
   // 2. PUBLIC AUTH ROUTES
@@ -485,16 +457,7 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { token: tok, ...full(rec, u), ...extras(rec) });
   }
 
-  // 3. PUBLIC STATIC FILES (Serve index.html, assets, css, js before token check)
-  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath);
-    const map = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-    res.writeHead(200, { 'Content-Type': map[ext] || 'text/plain' });
-    return fs.createReadStream(filePath).pipe(res);
-  }
-
-  // 4. AUTHENTICATED ENDPOINTS
+  // 3. AUTHENTICATED ENDPOINTS
   let user = null;
   const auth = req.headers.authorization;
   if (auth && auth.startsWith('Bearer ')) {
@@ -510,15 +473,46 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { ...full(rec, user), ...extras(rec) });
   }
 
+  if (pathname === '/api/info' && req.method === 'POST') {
+    const b = await body(req);
+    const em = String(b.email || '').trim().toLowerCase(), dob = String(b.dob || '').trim();
+    if (!validEmail(em)) return fail(res, 400, 'Invalid email address');
+    if (!validDob(dob)) return fail(res, 400, 'Invalid date of birth');
+    
+    const existing = DB.emails[em];
+    if (existing && existing !== user) return fail(res, 400, 'Email in use by another account');
+    
+    if (rec.email && DB.emails[rec.email] === user) delete DB.emails[rec.email];
+    rec.email = em; rec.dob = dob; DB.emails[em] = user;
+    const { sent, devCode } = await sendCode(rec, user);
+    persist();
+    return json(res, 200, { user: userInfo(rec, user), sent, devCode });
+  }
+
+  if (pathname === '/api/resend' && req.method === 'POST') {
+    if (!rec.email) return fail(res, 400, 'No email set');
+    if (rec.verified) return json(res, 200, { user: userInfo(rec, user), sent: true });
+    if (rec.vc && Date.now() - (rec.vc.last || 0) < 60000) return fail(res, 429, 'Wait 1 minute before resending code');
+    const { sent, devCode } = await sendCode(rec, user);
+    return json(res, 200, { user: userInfo(rec, user), sent, devCode });
+  }
+
+  if (pathname === '/api/verify' && req.method === 'POST') {
+    const b = await body(req);
+    const code = String(b.code || '').trim();
+    if (!rec.vc || Date.now() > rec.vc.exp) return fail(res, 400, 'Verification code expired');
+    rec.vc.tries = (rec.vc.tries || 0) + 1;
+    if (rec.vc.tries > 5) return fail(res, 400, 'Too many incorrect tries, request a new code');
+    if (sha(code + user) !== rec.vc.h) return fail(res, 400, 'Invalid verification code');
+    rec.verified = true; delete rec.vc; persist();
+    return json(res, 200, { user: userInfo(rec, user) });
+  }
+
   if (pathname === '/api/save' && req.method === 'POST') {
     const b = await body(req);
     rec.save = cleanSave(b, rec.save, userRoom.has(user));
     persist();
     return json(res, 200, { save: rec.save });
-  }
-
-  if (pathname === '/api/create-checkout' && req.method === 'POST') {
-    return handleCreateCheckout(req, res, user);
   }
 
   if (pathname === '/api/daily' && req.method === 'POST') {
@@ -532,11 +526,169 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, { coins: rec.save.coins, dia: rec.save.dia, save: rec.save });
   }
 
+  if (pathname === '/api/anniversary' && req.method === 'POST') {
+    const g = annGift(rec, true);
+    return json(res, 200, { gift: g, save: rec.save });
+  }
+
+  if (pathname === '/api/buy-effect' && req.method === 'POST') {
+    if (!caps(rec, user).buy) return fail(res, 403, 'Buying requires verified account age 13+');
+    const b = await body(req);
+    const fx = FX.find(x => x.id === b.id);
+    if (!fx) return fail(res, 400, 'Invalid effect');
+    if (rec.save.fxo.includes(fx.id)) return fail(res, 400, 'Already unlocked');
+    if (rec.save.gems < fx.g) return fail(res, 400, 'Not enough gems');
+    rec.save.gems -= fx.g;
+    rec.save.fxo.push(fx.id);
+    rec.save.fx = fx.id;
+    rec.save.rev++;
+    persist();
+    return json(res, 200, { gems: rec.save.gems, fxo: rec.save.fxo, fx: rec.save.fx });
+  }
+
+  if (pathname === '/api/buy-prism' && req.method === 'POST') {
+    if (!caps(rec, user).buy) return fail(res, 403, 'Buying requires verified account age 13+');
+    const b = await body(req);
+    const p = P[b.id];
+    if (!p || !p.gl) return fail(res, 400, 'Invalid prism item');
+    if (rec.save.gl.includes(p.id)) return fail(res, 400, 'Already owned');
+    if (rec.save.gems < p.gp) return fail(res, 400, 'Not enough gems');
+    rec.save.gems -= p.gp;
+    rec.save.gl.push(p.id);
+    rec.save.rev++;
+    persist();
+    return json(res, 200, { gems: rec.save.gems, gl: rec.save.gl });
+  }
+
+  if (pathname === '/api/news' && req.method === 'GET') {
+    return json(res, 200, { news: DB.news || [] });
+  }
+
+  if (pathname === '/api/friends' && req.method === 'GET') {
+    const fl = rec.friends || [];
+    return json(res, 200, { friends: fl.map(f => ({ username: f, online: !!DB.users[f], tb: DB.users[f] ? DB.users[f].save.tb || 0 : 0 })) });
+  }
+
+  if (pathname === '/api/friends/add' && req.method === 'POST') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Friends features require verified account age 13+');
+    const b = await body(req);
+    const target = String(b.username || '').trim().toLowerCase();
+    if (!DB.users[target]) return fail(res, 404, 'Player not found');
+    if (target === user) return fail(res, 400, 'Cannot add yourself');
+    rec.friends = rec.friends || [];
+    if (!rec.friends.includes(target)) rec.friends.push(target);
+    persist();
+    return json(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/chat' && req.method === 'GET') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Chat requires verified account age 13+');
+    const target = url.searchParams.get('with') || 'global';
+    const key = target === 'global' ? 'global' : [user, target].sort().join(':');
+    return json(res, 200, { messages: DB.chats[key] || [] });
+  }
+
+  if (pathname === '/api/chat' && req.method === 'POST') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Chat requires verified account age 13+');
+    const b = await body(req);
+    const target = String(b.target || 'global').trim().toLowerCase();
+    const text = String(b.text || '').trim().slice(0, 200);
+    if (!text) return fail(res, 400, 'Empty message');
+    const key = target === 'global' ? 'global' : [user, target].sort().join(':');
+    DB.chats[key] = DB.chats[key] || [];
+    DB.chats[key].push({ sender: user, text, ts: Date.now() });
+    if (DB.chats[key].length > 50) DB.chats[key].shift();
+    persist();
+    return json(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/trade/list' && req.method === 'GET') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Trading requires verified account age 13+');
+    const list = Object.values(DB.trades || {}).filter(t => t.status === 'open');
+    return json(res, 200, { trades: list });
+  }
+
+  if (pathname === '/api/trade/create' && req.method === 'POST') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Trading requires verified account age 13+');
+    const b = await body(req);
+    const off = +b.offer, reqI = +b.request, w = +b.world == 2 ? 2 : 1;
+    const L = listOf(rec.save, w);
+    if (!L.includes(off) || !tradable(off, w) || !tradable(reqI, w)) return fail(res, 400, 'Invalid trade items');
+    
+    L.splice(L.indexOf(off), 1);
+    fixEq(rec.save);
+    rec.save.rev++;
+    
+    const tid = DB.nextTrade++;
+    DB.trades[tid] = { id: tid, sender: user, offer: off, request: reqI, world: w, status: 'open', ts: Date.now() };
+    persist();
+    return json(res, 200, { tradeId: tid, save: rec.save });
+  }
+
+  if (pathname === '/api/trade/accept' && req.method === 'POST') {
+    if (!caps(rec, user).social) return fail(res, 403, 'Trading requires verified account age 13+');
+    const b = await body(req);
+    const tid = +b.tradeId, trade = DB.trades[tid];
+    if (!trade || trade.status !== 'open') return fail(res, 400, 'Trade unavailable');
+    if (trade.sender === user) return fail(res, 400, 'Cannot accept own trade');
+    
+    const w = trade.world, L = listOf(rec.save, w);
+    if (!L.includes(trade.request) || !tradable(trade.request, w)) return fail(res, 400, 'You do not own requested item');
+    
+    L.splice(L.indexOf(trade.request), 1);
+    giveItem(rec.save, trade.offer);
+    fixEq(rec.save);
+    
+    const senderRec = DB.users[trade.sender];
+    if (senderRec) {
+      giveItem(senderRec.save, trade.request);
+      fixEq(senderRec.save);
+    }
+    
+    trade.status = 'completed';
+    trade.acceptedBy = user;
+    persist();
+    return json(res, 200, { save: rec.save });
+  }
+
+  // Admin Panel Routes
+  if (pathname === '/api/admin/news' && req.method === 'POST') {
+    if (!isAdmin(user)) return fail(res, 403, 'Admin only');
+    const b = await body(req);
+    const title = String(b.title || '').trim(), content = String(b.content || '').trim();
+    if (!title || !content) return fail(res, 400, 'Missing fields');
+    DB.news = DB.news || [];
+    DB.news.unshift({ id: Date.now(), title, content, author: user, date: new Date().toISOString() });
+    persist();
+    return json(res, 200, { news: DB.news });
+  }
+
+  if (pathname === '/api/admin/item' && req.method === 'POST') {
+    if (!isAdmin(user)) return fail(res, 403, 'Admin only');
+    const b = await body(req);
+    const item = cleanCustom(b);
+    item.id = DB.nextCustom++;
+    DB.customs[item.id] = item;
+    G.addCustom(item);
+    
+    if (b.target) {
+      const targetRec = DB.users[String(b.target).toLowerCase()];
+      if (targetRec) {
+        giveItem(targetRec.save, item.id);
+        fixEq(targetRec.save);
+      }
+    }
+    persist();
+    return json(res, 200, { item });
+  }
+
   if (pathname === '/api/coop/events' && req.method === 'GET') {
+    if (!caps(rec, user).coop) return fail(res, 403, 'Co-op requires verified account age 8+');
     return joinSSE(req, res, user);
   }
 
   if (pathname === '/api/coop/create' && req.method === 'POST') {
+    if (!caps(rec, user).coop) return fail(res, 403, 'Co-op requires verified account age 8+');
     leaveRoom(user);
     const code = newCode();
     const room = { code, cap: 2, host: user, phase: 'lobby', floor: 1, n: 1, players: [], evs: [], ev: 0, rew: {}, ts: Date.now() };
@@ -547,6 +699,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/coop/join' && req.method === 'POST') {
+    if (!caps(rec, user).coop) return fail(res, 403, 'Co-op requires verified account age 8+');
     const b = await body(req);
     const code = String(b.code || '').trim().toLowerCase();
     const room = rooms.get(code);
@@ -562,6 +715,77 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === '/api/coop/leave' && req.method === 'POST') {
     leaveRoom(user);
+    return json(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/coop/start' && req.method === 'POST') {
+    const code = userRoom.get(user), room = rooms.get(code);
+    if (!room || room.host !== user) return fail(res, 403, 'Not room host');
+    startFloor(room);
+    broadcast(room);
+    return json(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/coop/attack' && req.method === 'POST') {
+    const code = userRoom.get(user), room = rooms.get(code);
+    if (!room || room.phase !== 'fight') return fail(res, 400, 'NotInFight');
+    const player = room.players.find(p => p.u === user);
+    if (!player || player.dead) return fail(res, 400, 'DeadOrMissing');
+
+    const st = G.stats(player.eq), b = G.bossFor(room.floor, room.n);
+    let rnd = () => { room.seed = (room.seed * 9301 + 49297) % 233280; return room.seed / 233280; };
+    const resDmg = G.dmg(st, b.w, rnd);
+    
+    room.bossHp = Math.max(0, room.bossHp - resDmg.d);
+    player.dealt += resDmg.d;
+    room.ev++;
+    room.evs.push({ type: 'hit', u: user, d: resDmg.d, crit: resDmg.t, bossHp: room.bossHp });
+
+    if (room.bossHp <= 0) {
+      room.phase = 'reward';
+      const sp = room.floor % 5 === 0;
+      for (const p of room.players) {
+        const pRec = DB.users[p.u]; if (!pRec) continue;
+        const drops = G.towerPool(room.floor, sp, pRec.save.owned);
+        room.rew[p.u] = drops;
+        pRec.save.coins += Math.round((30 + 10 * room.floor) * (1 + 0.2 * (room.n - 1)));
+        pRec.save.rev++;
+      }
+      persist();
+    } else {
+      const recDmg = G.recoil(b.r, st.def, 0.25);
+      player.hp = Math.max(0, player.hp - recDmg);
+      if (player.hp <= 0) player.dead = true;
+      room.evs.push({ type: 'bossHit', target: user, d: recDmg, hp: player.hp });
+
+      if (room.players.every(p => p.dead)) finishTower(room);
+    }
+
+    if (room.evs.length > 30) room.evs.shift();
+    broadcast(room);
+    return json(res, 200, { ok: true });
+  }
+
+  if (pathname === '/api/coop/pick' && req.method === 'POST') {
+    const code = userRoom.get(user), room = rooms.get(code);
+    if (!room || room.phase !== 'reward') return fail(res, 400, 'NotRewardPhase');
+    const player = room.players.find(p => p.u === user);
+    if (!player) return fail(res, 400, 'NotInRoom');
+
+    const b = await body(req);
+    const item = +b.itemId, drops = room.rew[user] || [];
+    if (drops.includes(item)) {
+      player.picked = item;
+      giveItem(rec.save, item);
+      fixEq(rec.save);
+      persist();
+    }
+
+    if (room.players.every(p => p.picked !== null || p.off)) {
+      room.floor++;
+      startFloor(room);
+    }
+    broadcast(room);
     return json(res, 200, { ok: true });
   }
 
