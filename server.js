@@ -168,7 +168,7 @@ const ADMIN = String(process.env.ADMIN_USER || 'vilocity').toLowerCase();
 const CFG = {
   PUBLIC_URL: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
   STRIPE_KEY: process.env.STRIPE_SECRET_KEY || '', STRIPE_WH: process.env.STRIPE_WEBHOOK_SECRET || '',
-  RESEND: process.env.RESEND_API_KEY || '', FROM: process.env.EMAIL_FROM || 'Forgebound <onboarding@resend.dev>',
+  RESEND: process.env.RESEND_API_KEY || 're_bo3s2NDU_EygoJzCbc37wGDAi3NcmoQ6C', FROM: process.env.EMAIL_FROM || 'Forgebound <onboarding@resend.dev>',
   DEV_CODE: process.env.DEV_SHOW_CODE === '1'
 };
 const MIN_COOP = 8, MIN_SOCIAL = 13, MIN_BUY = 13;
