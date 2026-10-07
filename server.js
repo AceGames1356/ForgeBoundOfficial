@@ -513,6 +513,7 @@ async function handlePaymentWebhook(req, res) {
 }
 
 // ---------- HTTP SERVER & API ROUTES ----------
+// ---------- HTTP SERVER & API ROUTES ----------
 const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -522,18 +523,12 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const pathname = url.pathname;
 
+  // 1. PUBLIC WEBHOOK (No Auth)
   if (pathname === '/api/payment/webhook' && req.method === 'POST') {
     return handlePaymentWebhook(req, res);
   }
 
-  let user = null;
-  const auth = req.headers.authorization;
-  if (auth && auth.startsWith('Bearer ')) {
-    const tok = auth.slice(7);
-    const s = DB.sessions[tok];
-    if (s && s.exp > Date.now()) user = s.user;
-  }
-
+  // 2. PUBLIC AUTH ROUTES (No Token Required)
   if (pathname === '/api/register' && req.method === 'POST') {
     if (limited(req, 10)) return fail(res, 429, 'Too many attempts');
     const b = await body(req);
@@ -568,6 +563,24 @@ const server = http.createServer(async (req, res) => {
     DB.sessions[tok] = { user: u, exp: Date.now() + 30 * 86400000 };
     persist();
     return json(res, 200, { token: tok, ...full(rec, u), ...extras(rec) });
+  }
+
+  // 3. PUBLIC STATIC FILES (Serve index.html, game assets, CSS, JS without token)
+  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath);
+    const map = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
+    res.writeHead(200, { 'Content-Type': map[ext] || 'text/plain' });
+    return fs.createReadStream(filePath).pipe(res);
+  }
+
+  // 4. AUTHENTICATED API ENDPOINTS
+  let user = null;
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith('Bearer ')) {
+    const tok = auth.slice(7);
+    const s = DB.sessions[tok];
+    if (s && s.exp > Date.now()) user = s.user;
   }
 
   if (!user) return fail(res, 401, 'Unauthorized');
@@ -630,14 +643,6 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/coop/leave' && req.method === 'POST') {
     leaveRoom(user);
     return json(res, 200, { ok: true });
-  }
-
-  let filePath = path.join(__dirname, pathname === '/' ? 'index.html' : pathname);
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
-    const ext = path.extname(filePath);
-    const map = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
-    res.writeHead(200, { 'Content-Type': map[ext] || 'text/plain' });
-    return fs.createReadStream(filePath).pipe(res);
   }
 
   fail(res, 404, 'Not found');
