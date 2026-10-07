@@ -799,7 +799,8 @@ function serveStatic(req, res, url) {
     res.end(data);
   });
 }
-http.createServer(async (req, res) => {
+// AFTER (Fixed)
+const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   try { if (url.pathname.startsWith('/api/')) await handleApi(req, res, url); else serveStatic(req, res, url); }
   catch (e) { console.error(e); if (!res.headersSent) fail(res, 400, 'Bad request.'); }
