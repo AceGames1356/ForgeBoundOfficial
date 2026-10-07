@@ -515,51 +515,72 @@ async function handleApi(req, res, url) {
       const j = await r.json(); if (!r.ok || !j.url) return fail(res, 502, 'Could not start checkout.'); return json(res, 200, { url: j.url });
     } catch (e) { return fail(res, 502, 'Could not reach the payment provider.'); }
   }
-  if (route === '/api/shop/creem-checkout') {
-    if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
-    if (!(CFG.CREEM_KEY && CFG.CREEM_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Creem payments are not set up on this server.');
+  // ----- Manual GCash Payment Routes -----
+  if (route === '/api/shop/gcash-submit') {
+    const b = await body(req);
+    const ref = String(b.refNo || '').trim();
+    const pack = G.GEM_PACKS.find(x => x.id === b.packId);
+
+    if (!pack) return fail(res, 400, 'Invalid pack selected.');
+    if (!/^\d{8,13}$/.test(ref)) return fail(res, 400, 'Please enter a valid GCash Reference Number (8-13 digits).');
+
+    DB.pendingGcash = DB.pendingGcash || [];
+    
+    if (DB.pendingGcash.some(p => p.ref === ref)) {
+      return fail(res, 400, 'This reference number has already been submitted.');
+    }
+
+    DB.pendingGcash.push({
+      id: 'req_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      user: me,
+      packId: b.packId,
+      gems: pack.gems,
+      cents: pack.cents,
+      ref,
+      t: Date.now()
+    });
+
+    persist();
+    return json(res, 200, { success: true, message: 'Payment submitted! Admin notification sent.' });
+  }
+
+  if (route === '/api/admin/gcash-requests') {
+    if (me !== ADMIN) return fail(res, 403, 'Admins only.');
+    return json(res, 200, { pending: DB.pendingGcash || [] });
+  }
+
+  if (route === '/api/admin/gcash-confirm') {
+    if (me !== ADMIN) return fail(res, 403, 'Admins only.');
     const b = await body(req);
     
-    const CREEM_PRODUCTS = {
-      g100:  'prod_6GFfYew5k8dmybqmMpfeNo',
-      g550:  'prod_1by8kcvkn2coI8YVtJtZEu',
-      g1200: 'prod_6ADiXfkLmxmD0Vy8jeB8YU',
-      g2600: 'prod_5dTmCwcsPc8xFRshpAsKf'
-    };
+    DB.pendingGcash = DB.pendingGcash || [];
+    const idx = DB.pendingGcash.findIndex(p => p.id === b.requestId);
+    if (idx === -1) return fail(res, 404, 'Request not found.');
 
-    const productId = CREEM_PRODUCTS[b.pack];
-    if (!productId) return fail(res, 400, 'Unknown or invalid pack selected.');
+    const reqData = DB.pendingGcash[idx];
+    const targetUser = DB.users[reqData.user];
+    if (!targetUser) return fail(res, 404, 'User account no longer exists.');
 
-    const isTestKey = CFG.CREEM_KEY.startsWith('test_');
-    const creemApiUrl = isTestKey 
-      ? 'https://test-api.creem.io/v1/checkouts' 
-      : 'https://api.creem.io/v1/checkouts';
+    targetUser.save.gems = (targetUser.save.gems || 0) + reqData.gems;
 
-    try {
-      const r = await fetch(creemApiUrl, {
-        method: 'POST',
-        headers: { 
-          'x-api-key': CFG.CREEM_KEY, 
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({
-          product_id: productId,
-          request_id: `${me}_${Date.now()}`,
-          success_url: CFG.PUBLIC_URL + '/?paid=1',
-          metadata: { user: me, pack: b.pack }
-        })
-      });
-      const j = await r.json();
-      const checkoutUrl = j.checkout_url || j.url;
-      if (!r.ok || !checkoutUrl) {
-        console.error('Creem error:', j);
-        return fail(res, 502, j.message || 'Could not start Creem checkout.');
-      }
-      return json(res, 200, { url: checkoutUrl });
-    } catch (e) { 
-      console.error('Creem reach error:', e);
-      return fail(res, 502, 'Could not reach Creem payment server.'); 
-    }
+    DB.pendingGcash.splice(idx, 1);
+    persist();
+
+    return json(res, 200, { success: true, message: `Granted ${reqData.gems} gems to ${reqData.user}!` });
+  }
+
+  if (route === '/api/admin/gcash-reject') {
+    if (me !== ADMIN) return fail(res, 403, 'Admins only.');
+    const b = await body(req);
+
+    DB.pendingGcash = DB.pendingGcash || [];
+    const idx = DB.pendingGcash.findIndex(p => p.id === b.requestId);
+    if (idx === -1) return fail(res, 404, 'Request not found.');
+
+    DB.pendingGcash.splice(idx, 1);
+    persist();
+
+    return json(res, 200, { success: true, message: 'Payment request rejected.' });
   }
   if (route === '/api/gems/buy') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
