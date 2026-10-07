@@ -515,7 +515,7 @@ async function handleApi(req, res, url) {
       const j = await r.json(); if (!r.ok || !j.url) return fail(res, 502, 'Could not start checkout.'); return json(res, 200, { url: j.url });
     } catch (e) { return fail(res, 502, 'Could not reach the payment provider.'); }
   }
-  // ----- Manual GCash Payment Routes -----
+// ----- Manual GCash Payment Routes -----
   if (route === '/api/shop/gcash-submit') {
     const b = await body(req);
     const ref = String(b.refNo || '').trim();
@@ -525,7 +525,7 @@ async function handleApi(req, res, url) {
     if (!/^\d{8,13}$/.test(ref)) return fail(res, 400, 'Please enter a valid GCash Reference Number (8-13 digits).');
 
     DB.pendingGcash = DB.pendingGcash || [];
-    
+
     if (DB.pendingGcash.some(p => p.ref === ref)) {
       return fail(res, 400, 'This reference number has already been submitted.');
     }
@@ -552,7 +552,7 @@ async function handleApi(req, res, url) {
   if (route === '/api/admin/gcash-confirm') {
     if (me !== ADMIN) return fail(res, 403, 'Admins only.');
     const b = await body(req);
-    
+
     DB.pendingGcash = DB.pendingGcash || [];
     const idx = DB.pendingGcash.findIndex(p => p.id === b.requestId);
     if (idx === -1) return fail(res, 404, 'Request not found.');
@@ -581,6 +581,7 @@ async function handleApi(req, res, url) {
     persist();
 
     return json(res, 200, { success: true, message: 'Payment request rejected.' });
+  }
   }
   if (route === '/api/gems/buy') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
@@ -776,11 +777,26 @@ async function handleApi(req, res, url) {
 
 // ---------- static: index.html and the shared rules ----------
 function serveStatic(req, res, url) {
-  if (url.pathname === '/shared.js') { res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' }); return res.end(SHARED); }
+  if (url.pathname === '/shared.js') {
+    res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-cache' });
+    return res.end(SHARED);
+  }
+
+  // Serve the GCash QR image file directly
+  if (url.pathname === '/gcash-qr.png') {
+    return fs.readFile(path.join(__dirname, 'gcash-qr.png'), (e, data) => {
+      if (e) return fail(res, 404, 'QR image file missing');
+      res.writeHead(200, { 'Content-Type': 'image/png' });
+      res.end(data);
+    });
+  }
+
   if (url.pathname !== '/' && url.pathname !== '/index.html') return fail(res, 404, 'Not found');
+
   fs.readFile(path.join(__dirname, 'index.html'), (e, data) => {
     if (e) return fail(res, 500, 'index.html is missing. Put it in the same folder as server.js.');
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' }); res.end(data);
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache' });
+    res.end(data);
   });
 }
 http.createServer(async (req, res) => {
