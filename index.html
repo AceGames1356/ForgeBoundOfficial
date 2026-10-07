@@ -462,29 +462,16 @@ const SL={h:'Handle',b:'Blade',g:'Guard',c:'Core'};
 const B=BOSSES;
 let GIFT=null,S,USER=null,STATE='',MODE='in',TOKEN=localStorage.getItem('fb:token')||'';
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function fresh(clears){return{owned:[0,6,13,18],eq:{h:0,b:6,g:13,c:18},boss:0,clears:clears||0,tb:0,coins:0,hpup:0,dia:0,world:1,b2:0,cl1:0,cl2:0,perm:[],ann:0,gain:0,gdia:0,hp:100,bhp:0,cd:false,log:[],scr:'forge',rew:[],tab:'b',last:null,rs:false,n:0}}
 async function api(p,b){const r=await fetch(p,{method:b===undefined?'GET':'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+TOKEN},body:b===undefined?undefined:JSON.stringify(b)});const j=await r.json().catch(()=>null);if(!j)throw new Error('The game server is not reachable here. Accounts and co-op need server.js running.');if(!r.ok)throw new Error(j.error||'Request failed');return j}
-const snapOld=()=>({owned:S.owned,eq:S.eq,boss:S.boss,clears:S.clears,coins:S.coins,hpup:S.hpup,dia:S.dia,world:S.world,b2:S.b2,cl1:S.cl1});
-function applySave(v){if(v&&v.owned&&v.eq){const sc=S.scr;S=Object.assign(fresh(),{owned:v.owned,eq:v.eq,boss:v.boss||0,clears:v.clears||0,tb:v.tb||0,coins:v.coins||0,hpup:v.hpup||0,dia:v.dia||0,world:v.world==2?2:1,b2:v.b2||0,cl1:v.cl1?1:0,perm:v.perm||[],ann:v.ann||0});S.scr=sc}}
-async function save(){if(!USER)return;const p=STATE;try{const j=await api('/api/save',snap());S.tb=j.save.tb||0;S.perm=j.save.perm||S.perm;STATE=''}catch(e){STATE='save failed'}if(STATE!==p)render()}
-async function connect(){if(TOKEN){try{const j=await api('/api/me');USER={u:j.user.username,name:j.user.name};(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null}catch(e){if(/log in/i.test(e.message)){TOKEN='';localStorage.removeItem('fb:token')}}}render();if(GIFT)showGift(GIFT)}
+
 function openM(){drawM()}
 function closeM(){document.getElementById('modal').innerHTML=''}
 function setMode(m){MODE=m;drawM()}
-function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label><label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key=='Enter')submit()"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
-async function submit(){const E=m=>{document.getElementById('err').textContent=m},g=id=>document.getElementById(id);
-const u=g('f-u').value.trim().toLowerCase(),pw=g('f-p').value,n=MODE=='new'?g('f-n').value.trim():'';
-if(MODE=='new'&&!n)return E('Enter your name.');
-if(!/^[a-z0-9_]{3,16}$/.test(u))return E('Username: 3 to 16 letters, numbers or underscores.');
-if(pw.length<6)return E('Password needs at least 6 characters.');
-E('One moment…');
-try{const j=await api(MODE=='new'?'/api/signup':'/api/login',{username:u,password:pw,name:n,save:MODE=='new'?snap():undefined});
-TOKEN=j.token;localStorage.setItem('fb:token',TOKEN);USER={u:j.user.username,name:j.user.name};(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null}catch(e){return E(e.message)}
-closeM();render();if(GIFT)showGift(GIFT)}
-function out(){api('/api/logout',{}).catch(()=>{});TOKEN='';localStorage.removeItem('fb:token');closeRoom();USER=null;S=fresh();S.scr='home';render()}
+
 function st(){let o={atk:0,spd:1,def:0,crit:0,life:0,e:'none'};
-for(const k in S.eq){const p=P[S.eq[k]];o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
+for(const k in S.eq){const p=P[S.eq[k]];if(!p)continue;o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
 o.spd=Math.max(.3,o.spd);return o}
+
 const W=(n,m,t)=>Array.from({length:n},(_,i)=>i<t?Math.max(1,Math.ceil(m*(i+1)/t)):m);
 const BW={'Rust Blade':W(24,3,4),'Steel Edge':W(28,3,5),'Rapier':W(32,1,3),'Cleaver':W(22,5,2),'Reaper Scythe':[5,5,4,4,4,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],'Glass Fang':[1,1,2,2,3,3,3,3,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1,1],'Greatblade':W(34,6,5)};
 function svg(E,vb,ww,hh){E=E||S.eq;const h=P[E.h],b=P[E.b],g=P[E.g],c=P[E.c],cx=16,D='#12101c',w=b.sh?W(...b.sh):BW[b.n],y0=38-w.length;let o='';
@@ -499,7 +486,7 @@ R(cx-3,59,6,5,D);R(cx-2,60,4,3,g.c);
 R(cx-3,37,6,4,D);R(cx-2,38,4,2,EC[c.e]);R(cx-2,38,1,1,'#fff');
 return `<svg viewBox="${vb||'0 0 32 66'}" width="${ww||128}" height="${hh||264}" shape-rendering="crispEdges" role="img" aria-label="Your weapon">${o}</svg>`}
 const VB={b:[[4,0,24,44],1],h:[[8,34,16,32],1],g:[[4,30,24,16],1],c:[[8,30,16,14],1]};
-function ico(p){const E={h:0,b:6,g:13,c:18};E[p.s]=p.id;const v=VB[p.s][0],H=p.s=='b'||p.s=='h'?52:34;return svg(E,v.join(' '),Math.round(H*v[2]/v[3]),H)}
+
 const BP={o:'#12101c',w:'#fff',y:'#ffd84d',r:'#a02030'};
 const BS=[
 {a:'#4fd06a',b:'#2f9a49',c:'#a6f2b6',e:'#12101c',r:["........","...y.y.y","...yyyyy","...ooooo","..ooaaaa",".oaaaacc",".oaacaaa",".oaaweaa",".oaaweaa",".oaaaaaa",".oabaooo",".oabbbbb",".oabbbbb","..oobbbb","...ooooo","........"]},
@@ -538,13 +525,9 @@ const W2SP=[[0,4,{a:'#d9b36a',b:'#9a7a3a',c:'#f0dca0',e:'#5e3b1b'}],[2,3,{a:'#c9
 [0,7,{a:'#ff6b1a',b:'#a02a0a',c:'#ffb27a',e:'#ffe14d'}],[0,4,{a:'#6b6b78',b:'#3a3a48',c:'#a0a0b0',e:'#ff6b1a'}],[0,6,{a:'#e0455a',b:'#7a1a2a',c:'#ff9aa8',e:'#ffe14d',y:'#ff9d2b'}],[2,2,{a:'#3a3160',b:'#1a1430',c:'#7a6ac0',e:'#ff3b6b',f:'#a66bff'}],
 [0,9,{a:'#7a4be0',b:'#3a1a90',c:'#c8a8ff',e:'#00ffcc',y:'#d9b24a'}],[0,3,{a:'#5f6bff',b:'#2a2f9a',c:'#a8b0ff',e:'#ffffff',y:'#ffe14d'}],[0,11,{a:'#3b2a6b',b:'#1f1540',c:'#a66bff',e:'#ff2a2a',f:'#7a4be0',y:'#d9b24a'}],[-1,0,{}]];
 const w2g=i=>{const s=W2SP[i];return s[0]<0?VGRID:Object.assign({},GR(s[0],s[1]),s[2])};
-function cb(){if(S.world==2){if(S.b2>=WORLD2.length)return null;return Object.assign({w2:1,i:S.b2},WORLD2[S.b2])}return Object.assign({w2:0,i:S.boss},B[S.boss])}
-const bsprOld=(b,sz)=>b.w2?sprG(w2g(b.i),sz,b.n):spr(b.i,sz);
-const bcoinOld=b=>b.w2?b.coin:BOSS_COIN[b.i];
+
 function desc(p){const a=[];if(p.atk)a.push('ATK '+(p.atk>0?'+':'')+p.atk);if(p.spd)a.push('SPD '+(p.spd>0?'+':'')+p.spd);if(p.def)a.push('DEF '+(p.def>0?'+':'')+p.def);if(p.crit)a.push('Crit '+Math.round(p.crit*100)+'%');if(p.life)a.push('Lifesteal '+Math.round(p.life*100)+'%');if(p.e&&p.e!='none')a.push(p.e);return RN[p.t]+(p.wd?' (W2)':p.an?' (Anniversary)':'')+'. '+(a.join(', ')||'No bonus')}
-function eq(id){sfx.equip();S.eq[P[id].s]=id;save();render()}
-function tab(k){S.tab=k;render()}
-function start(){const b=cb();if(!b)return;stopAg();S.bhp=b.hp;S.hp=MX();S.log=['The '+b.n+' stirs.'];S.scr='fight';S.cd=false;S.fx=0;S.last=null;S.over=0;if(b.aggr)startAg(b);render()}
+
 function atk(){if(S.cd||S.over)return;const s=st(),b=cb();let d=s.atk*(.85+Math.random()*.3),t=[];
 if(Math.random()<s.crit){d*=2;t.push('crit')}if(s.e==b.w){d*=1.8;t.push('weakness')}
 d=Math.round(d);S.bhp=Math.max(0,S.bhp-d);
@@ -553,6 +536,7 @@ S.log.unshift(`You hit for ${d}${t.length?' ('+t.join(', ')+')':''}. Recoil: you
 sfx.swing();S.cd=true;S.fx=1;render();S.fx=0;if(d>0)(t.length?sfx.crit:sfx.hit)();setTimeout(sfx.hurt,120);
 if(S.bhp<=0){S.over=1;stopAg();setTimeout(win,900);return}if(S.hp<=0){loseFight(b);return}
 setTimeout(()=>{S.cd=false;if(S.scr=='fight')render()},Math.max(650,1000/s.spd))}
+
 function loseFight(b){if(S.over)return;S.over=1;stopAg();S.cd=true;setTimeout(()=>{const f=1-S.bhp/b.hp;S.gain=Math.round(bcoin(b)*.4*f);S.coins+=S.gain;S.gdia=b.w2?Math.round(b.dia*.3*f):0;S.dia+=S.gdia;save();S.scr='over';sfx.lose();render()},900)}
 function stopAg(){if(S.agT)clearTimeout(S.agT);S.agT=0;S.ag=null}
 function startAg(b){S.ag={tele:0,guard:0,gcd:0};const loop=()=>{if(S.scr!='fight'||!S.ag||S.over)return;const ev=(S.bhp<b.hp/2?.75:1)*b.aggr.every;
@@ -561,29 +545,12 @@ S.agT=setTimeout(()=>{if(S.scr!='fight'||!S.ag||S.over)return;agHit(b);if(S.scr=
 function agHit(b){const s=st(),g=Date.now()<S.ag.guard,dm=Math.max(1,Math.round(Game.recoil(b.aggr.pw,s.def,b.fl)*(g?.3:1)));S.hp-=dm;
 S.log.unshift(g?`You guard ${b.n}'s attack and take ${dm}.`:`${b.n} strikes you for ${dm}!`);(g?sfx.block:sfx.hurt)();if(S.hp<=0){S.hp=0;fupd();loseFight(b)}else fupd()}
 function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.now()+900;S.ag.gcd=Date.now()+1700;sfx.guard();fupd();setTimeout(fupd,1750)}
-function fupd(){if(S.scr!='fight')return;const b=cb(),$=id=>document.getElementById(id);if(!$('fbf'))return;
-$('fbf').style.width=S.bhp/b.hp*100+'%';$('fbt').textContent=`${S.bhp}/${b.hp} HP. Weak to ${b.w}.`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'%';
-$('fpt').textContent=`You: ${Math.max(0,S.hp)}/${MX()}. Each swing costs you ${Game.recoil(b.r,st().def,b.fl)} HP.`;
-const ag=S.ag;$('fboss').classList.toggle('tele',!!(ag&&ag.tele));$('tele').textContent=ag&&ag.tele?b.n+' is winding up! GUARD!':'';
-const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'Guard…':'Guard'}
-document.querySelector('.log').innerHTML=S.log.slice(0,8).map(l=>'<div>'+l+'</div>').join('')}
-function win(){const b=cb();sfx.win();stopAg();S.gain=bcoin(b);S.coins+=S.gain;S.gdia=b.w2?b.dia:0;S.dia+=S.gdia;
-S.rew=(b.w2?Game.dropPool2(b.i,S.owned):Game.dropPool(b.i,S.owned)).map(id=>P[id]);save();setTimeout(()=>sfx.reveal(S.rew.reduce((m,p)=>Math.max(m,p.t),0)),500);S.scr='reward';render()}
-function advance(){if(S.world==2){S.b2++;if(S.b2>=WORLD2.length){S.cl2=(S.cl2|0)+1;S.clears++;S.scr='end2';save();render();return}}
-else{S.boss++;if(S.boss>=B.length){S.cl1=1;S.world=2;S.b2=0;S.scr='cut';save();render();return}}S.scr='forge';save();render()}
+
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
 function skip(){advance()}
 function reset(){if(!S.rs){S.rs=true;render();return}doReset()}
-async function doReset(){const perm=S.perm||[],cl=S.clears,tb=S.tb,ann=S.ann;S=fresh(cl);S.perm=perm;S.tb=tb;S.ann=ann;S.owned=[...new Set([0,6,13,18,...perm])];S.scr='forge';
-if(USER){try{const j=await api('/api/save',{reset:1});applySave(j.save)}catch(e){STATE='save failed'}}render()}
-function bar(v,m,c){return `<div class="bar"><i style="width:${Math.max(0,v/m*100)}%;background:${c}"></i></div>`}
-function head(){const ic='<svg viewBox="0 0 8 8" width="22" height="22" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" width="2" height="1"/><rect x="2" y="1" width="4" height="2"/><rect x="3" y="3" width="2" height="1"/><rect x="1" y="4" width="6" height="1"/><rect y="5" width="8" height="3"/></svg>';
-const rs=S.scr=='forge'?`<button onclick="reset()">${S.rs?'Confirm: erase run':'New run'}</button>`:'',mn=['forge','shop','settings','lobby','map','minis'].includes(S.scr)?`<button onclick="S.scr='home';render()">Menu</button>`:'',cn=`<span class="nm"><span class="coin"></span><b>${S.coins||0}</b></span>${S.cl1?`<span class="nm"><span class="dia"></span><b>${S.dia||0}</b></span>`:''}`;
-const w=USER?`${cn}<span class="nm"><b>${esc(USER.name)}</b> ${STATE||'saved'}</span>${mn}${rs}<button onclick="out()">Log out</button><span class="av" aria-hidden="true">${esc(USER.name[0]||'?').toUpperCase()}</span>`:`${cn}<span class="nm">Guest: not saved</span>${mn}${rs}<button class="ib" onclick="openM()" aria-label="Log in or create account" title="Log in or create account">${ic}</button>`;
-return `<header>${S.scr=='home'?'<span></span>':'<h1>Forgebound</h1>'}<div class="who">${w}</div></header>`}
-const MXold=()=>Game.maxHp(S.hpup||0);
+
 let CF={snd:1,vol:'med',anim:1,theme:'auto',pal:'aurora'};try{Object.assign(CF,JSON.parse(localStorage.getItem('fb:set')||'{}'))}catch(e){}
-function applySet(){const r=document.documentElement;if(CF.theme=='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',CF.theme);r.classList.toggle('noanim',!CF.anim)}
 function setOpt(k,v){CF[k]=v;try{localStorage.setItem('fb:set',JSON.stringify(CF))}catch(e){}applySet();if(k=='snd'&&v)sfx.buy();if(k=='vol')sfx.coin();render()}
 let AC=null;const VOL={low:.5,med:1,high:1.8};
 function ac(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();return AC}
@@ -611,38 +578,18 @@ async function openAdmin(){S.scr='admin';AD.msg='';render();try{const j=await ap
 async function refreshMe(){try{const j=await api('/api/me');(j.customs||[]).forEach(Game.addCustom);applySave(j.save)}catch(e){}}
 async function adm(path,body,ok){try{const j=await api(path,body);AD.msg=ok(j);sfx.admin();if(j.part)Game.addCustom(j.part);if(AD.who===USER.u)await refreshMe()}catch(e){AD.msg='Error: '+e.message;sfx.deny()}render()}
 const admGive=id=>adm('/api/admin/give',{username:AD.who,part:id},()=>`Gave ${P[id].n} to ${AD.who}.`);
-const admWold=p=>{const w=AD.wf;return w=='all'||(w=='1'&&!p.wd&&!p.an)||(w=='2'&&p.wd)||(w=='an'&&p.an)};
-const admDia=()=>adm('/api/admin/diamonds',{username:AD.who,amount:+AD.amt},j=>`${AD.who} now has ${j.dia} diamonds.`);
+const admDia=()=>adm('/api/admin/diamonds',{username:AD.who,amount:+AD.amt},j=>`${AD.who} has ${j.dia} diamonds.`);
 const admAnn=()=>adm('/api/admin/anniversary',{username:AD.who},()=>`Anniversary gift given to ${AD.who}.`);
 const admWorld=()=>adm('/api/admin/world',{username:AD.who},()=>`World 2 unlocked for ${AD.who}.`);
-const admCoins=()=>adm('/api/admin/coins',{username:AD.who,amount:+AD.amt},j=>`${AD.who} now has ${j.coins} coins.`);
+const admCoins=()=>adm('/api/admin/coins',{username:AD.who,amount:+AD.amt},j=>`${AD.who} has ${j.coins} coins.`);
 const admCustom=()=>{const c=AD.cust;if(!c.n.trim()){AD.msg='Give the item a name first.';sfx.deny();return render()}adm('/api/admin/custom',{username:AD.who,part:cdef()},j=>`Created "${j.part.n}" and gave it to ${AD.who}.`)};
-const cdefOld=()=>{const c=AD.cust;return{s:c.s,n:c.n.trim(),t:+c.t,c:c.c,atk:+c.atk,spd:+c.spd,def:+c.def,crit:+c.crit,life:+c.life,e:c.e,w:+c.w,dc:c.dc,sh:SHAPES[c.shape]}};
 function prevH(){const d=cdef();d.id=9999;d.n=d.n||'Preview';return ico(Game.addCustom(d))}
 function cf(k,v){AD.cust[k]=v;const e=document.getElementById('cprev');if(e)e.innerHTML=prevH()}
 function adTab(k){AD.tab=k;render()}
-function adminH(){const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;let b;
-if(AD.tab=='give'){b=`<div class="tabs">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs">${[['all','All'],['1','World 1'],['2','World 2'],['an','Anniversary']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><div class="parts">`+P.filter(p=>!p.cu&&p.s==AD.fs&&admW(p)).sort((a,b)=>a.t-b.t).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="admGive(${p.id})">${ico(p)}<span>${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div>`}
-else if(AD.tab=='custom'){const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
-b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.map((n,i)=>`<option value="${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+
-(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+
-(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+
-(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+
-`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit chance (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`}
-else if(AD.tab=='coins')b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go" onclick="admCoins()">Give coins</button><button class="go" onclick="admDia()">Give diamonds</button></div>`;
-else b=`<p>Unlock World 2 for this player, as if they had beaten The Final God.</p><button class="go" onclick="admWorld()">Unlock World 2</button><button class="go" style="margin-top:8px" onclick="admAnn()">Give anniversary gift</button>`;
-return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs">${[['give','Give a piece'],['custom','Custom item'],['coins','Coins & diamonds'],['prog','Progress']].map(([k,n])=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${n}</button>`).join('')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='home';render()">Back to menu</button></div>`}
-function homeH(){const ann=Game.annYear(Date.now());return `<div class="home"><div class="ttl">FORGE<br>BOUND</div><p>Forge a weapon. Defeat the bosses. Cross two worlds.</p>${ann?`<div class="ann">Anniversary event! Free gifts that stay forever. ${USER?'They are added when you log in.':'Log in to claim them.'}</div>`:''}<div class="hero">${svg(null,'0 0 32 66',96,198)}</div><button class="go" onclick="S.scr='forge';render()">Play</button><button onclick="S.scr='map';render()">Boss map</button><button onclick="S.scr='lobby';S.sub='menu';render()">Co-op Tower</button><button onclick="S.scr='settings';render()">Settings</button>${USER&&USER.u==='vilocity'?'<button onclick="openAdmin()">Admin panel</button>':''}</div>`}
-function opt(k,label,vals){return `<div class="orow"><span>${label}</span><div class="tabs">${vals.map(([v,n])=>`<button class="${CF[k]==v?'on':''}" onclick="setOpt('${k}',${JSON.stringify(v).replace(/"/g,"'")})">${n}</button>`).join('')}</div></div>`}
-function settingsH(){return `<div class="box" style="max-width:480px;margin:0 auto"><h2>Settings</h2>${opt('snd','Sound effects',[[1,'On'],[0,'Off']])}${opt('vol','Volume',[['low','Low'],['med','Medium'],['high','High']])}${opt('anim','Animations',[[1,'On'],[0,'Off']])}${opt('theme','Theme',[['auto','Auto'],['dark','Dark'],['light','Light']])}<button style="margin-top:10px;width:100%;text-align:center" onclick="S.scr='home';render()">Back</button></div>`}
-function buy(id){const p=P[id];if(S.owned.includes(id)||p.cu||p.an)return;const d=!!p.wd,pr=d?PRICE2[p.t]:PRICE[p.t];if(pr==null)return;if((d?S.dia:S.coins)<pr){sfx.deny();return}if(d)S.dia-=pr;else S.coins-=pr;S.owned.push(id);sfx.buy();save();render()}
-function buyHp(){const l=S.hpup||0;if(l<5){const c=Game.hpCost(l);if(S.coins<c){sfx.deny();return}S.coins-=c}else{const c=Game.hpCostD(l);if(c==null||S.dia<c){sfx.deny();return}S.dia-=c}S.hpup=l+1;sfx.buy();save();render()}
-function stab(k){S.st=k;render()}function scur(k){S.shopc=k;S.st='all';render()}
-function shopH(){const dm=S.shopc=='d'&&S.cl1,f=S.st||'all',l=S.hpup||0,items=P.filter(p=>!p.cu&&!p.an&&!!p.wd==dm&&p.t<6&&!S.owned.includes(p.id)&&(f=='all'||p.s==f)).sort((a,b)=>a.t-b.t||a.s.localeCompare(b.s));
-const vc=l<5?Game.hpCost(l):Game.hpCostD(l),show=dm?(l>=5&&l<10):l<5,have=dm?S.dia:S.coins;
-return `<div class="box"><h2>Shop</h2><p>You have <b>${S.coins||0}</b> coins${S.cl1?` and <b>${S.dia||0}</b> diamonds`:''}. God rarity parts are never for sale: beat the most powerful bosses to earn them.</p>${S.cl1?`<div class="tabs">${[['c','Coin shop'],['d','Diamond shop']].map(([k,n])=>`<button class="${(dm?'d':'c')==k?'on':''}" onclick="scur('${k}')">${n}</button>`).join('')}</div>`:''}<div class="tabs">${[['all','All'],['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${f==k?'on':''}" onclick="stab('${k}')">${n}</button>`).join('')}</div><div class="parts">${show?`<button class="part" style="--tc:var(--good)" ${have<vc?'disabled':''} onclick="buyHp()"><span>Vitality ${l}/10<small>+${l<5?10:15} max HP. ${vc} ${dm?'diamonds':'coins'}</small></span></button>`:''}`+items.map(p=>{const pr=dm?PRICE2[p.t]:PRICE[p.t];return `<button class="part" style="--tc:${TC[p.t]}" ${have<pr?'disabled':''} onclick="buy(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}. ${pr} ${dm?'diamonds':'coins'}</small></span></button>`}).join('')+`</div>${items.length?'':'<p>Nothing left to buy here.</p>'}<button style="width:100%;text-align:center" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 
-/* ---------- World 2: map, cutscene, minigames, gifts ---------- */
+function opt(k,label,vals){return `<div class="orow"><span>${label}</span><div class="tabs">${vals.map(([v,n])=>`<button class="${CF[k]==v?'on':''}" onclick="setOpt('${k}',${JSON.stringify(v).replace(/"/g,"'")})">${n}</button>`).join('')}</div></div>`}
+
+/* World 2 map, cutscene, minigames */
 let MAPIMG=null;
 function genMap(){if(MAPIMG)return MAPIMG;const Wd=96,Ht=60,cv=document.createElement('canvas');cv.width=Wd;cv.height=Ht;const g=cv.getContext('2d');
 let sd=7;const rn=()=>{sd=(sd*16807)%2147483647;return sd/2147483647},lat=Array.from({length:150},rn),sm=t=>t*t*(3-2*t),LT=(a,b)=>lat[(b*14+a)%150];
@@ -680,8 +627,8 @@ let det='<p>Tap a boss on the map to see its details.</p>';
 if(sel){if(sel.t=='M'){const id=['maze','dodge','hunt'][sel.i],m=MGI[id];det=`<h2>${m.n}</h2><p>${m.d}</p><p>${mgOK(id)?'Unlocked.':'Unlocks after you defeat '+MG_UNLOCK[sel.i]+' bosses in World 2.'}</p>${mgOK(id)?`<button class="go" onclick="mgOpen('${id}')">Play</button>`:''}`}
 else{const b=wv==1?B[sel.i]:WORLD2[sel.i],w2=wv==2,state=wv==1?(S.world==2||sel.i<S.boss?'Defeated':sel.i==S.boss?'Next boss':'Not reached yet'):(!S.cl1?'Not reached yet':sel.i<S.b2?'Defeated':sel.i==S.b2?'Next boss':'Not reached yet');
 det=`<div class="row"><div>${w2?sprG(w2g(sel.i),72,b.n):spr(sel.i,72)}</div><div><h2>${b.n}</h2><p>${state}</p></div></div><p>${b.hp} HP. Recoil ${b.r} per swing. Weak to ${b.w}.${b.aggr?' He fights back with timed attacks: use Guard.':''}</p><p>Reward: ${w2?b.coin+' coins, '+b.dia+' diamonds':BOSS_COIN[sel.i]+' coins'} and a part.</p>${fightBtn(wv,sel.i)}`}}
-return `<div class="box"><h2>Boss map</h2>${two?`<div class="tabs"><button class="${wv==1?'on':''}" onclick="mworld(1)">World 1</button><button class="${wv==2?'on':''}" onclick="mworld(2)">World 2</button></div>`:'<p>Something lies beyond the sea. Defeat The Final God to find out.</p>'}<div class="mapbox" id="mapbox" data-fx="${foc.x/96*100}" data-fy="${foc.y/60*100}">${inner}</div><button style="width:100%;margin-top:8px;text-align:center" onclick="S.mz=${Z==3?1:3};render()">${Z==3?'Zoom out (see the whole map)':'Zoom in (easier to tap)'}</button><div class="box" style="margin-top:10px">${det}</div><button style="width:100%;margin-top:10px;text-align:center" onclick="S.scr='${S.cl1&&S.world==2?'forge':'forge'}';render()">Back to forge</button></div>`}
-/* cutscene */
+return `<div class="box"><h2>Boss map</h2>${two?`<div class="tabs"><button class="${wv==1?'on':''}" onclick="mworld(1)">World 1</button><button class="${wv==2?'on':''}" onclick="mworld(2)">World 2</button></div>`:'<p>Something lies beyond the sea. Defeat The Final God to find out.</p>'}<div class="mapbox" id="mapbox" data-fx="${foc.x/96*100}" data-fy="${foc.y/60*100}">${inner}</div><button style="width:100%;margin-top:8px;text-align:center" onclick="S.mz=${Z==3?1:3};render()">${Z==3?'Zoom out (see the whole map)':'Zoom in (easier to tap)'}</button><div class="box" style="margin-top:10px">${det}</div><button style="width:100%;margin-top:10px;text-align:center" onclick="S.scr='forge';render()">Back to forge</button></div>`}
+
 let CUTT=[];
 function cutH(){return `<div class="cut"><div class="cutm"><div class="zoomer" id="zm" style="transform:scale(5)"><img class="mapimg" src="${genMap()}" alt="The world map"></div></div><div class="cutc" id="cutc" role="status"></div><div class="cutb"><button onclick="cutDone()">Skip</button><button class="go" id="cutgo" style="display:none;width:auto;padding:12px 24px" onclick="cutDone()">Enter World 2</button></div></div>`}
 function startCut(){const z=document.getElementById('zm'),c=document.getElementById('cutc'),go=document.getElementById('cutgo');if(!z)return;CUTT.forEach(clearTimeout);CUTT=[];sfx.rumble();
@@ -690,16 +637,10 @@ CUTT.push(setTimeout(()=>{z.style.transition='transform 9s steps(36)';z.style.tr
 L.forEach(([t,x])=>CUTT.push(setTimeout(()=>{c.textContent=x;sfx.cutline()},t)));CUTT.push(setTimeout(()=>{go.style.display='';sfx.reveal(6)},9400))}
 function cutDone(){CUTT.forEach(clearTimeout);CUTT=[];S.scr='forge';render()}
 function end2H(){return `<div class="box" style="max-width:560px;margin:0 auto"><h2>ViLocity is defeated!</h2><p>The Shattered Lands are free. You conquered both worlds (clears: ${S.clears}).</p><div class="hero">${bspr({w2:1,i:20,n:'ViLocity'},96)}</div><p>Keep playing: minigames still earn diamonds and the shops are open. Or press New run in the forge to start over.</p><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
-function forgeBoxH(){const b=cb(),btn=(f,t)=>`<button onclick="${f}" style="width:100%;margin-top:10px;text-align:center">${t}</button>`;let h='<div class="box">';
-if(b)h+=`<h2><span style="vertical-align:middle">${bspr(b,40)}</span> ${S.world==2?'World 2: ':''}Next boss: ${b.n}</h2><p>${b.hp} HP. Recoil ${b.r} per swing, minus your defense. Weak to ${b.w}.${b.aggr?' He fights back: press Guard when he winds up!':''}</p><button class="go" onclick="start()">Fight ${b.n}</button>`;
-else h+='<h2>World 2 conquered</h2><p>ViLocity is defeated. Free roam: play minigames, shop, or start a new run.</p>';
-h+=btn("S.scr='map';render()",'Boss map');if(S.world==2)h+=btn("S.scr='minis';render()",'Minigames');
-return h+btn("S.scr='lobby';S.sub='menu';render()",`Co-op Tower (best floor ${S.tb||0})`)+btn("S.scr='shop';render()",'Shop')+'</div>'}
-function fightH(){const s=st(),b=cb(),rec=Game.recoil(b.r,s.def,b.fl),L=S.last,fx=S.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),ag=S.ag,tele=ag&&ag.tele,gOn=ag&&Date.now()<ag.gcd;
-return `<div class="box arena" style="max-width:520px;margin:0 auto"><div class="sw ${fx?'go':''}" style="${aura()}">${svg(null,'0 0 32 66',63,130)}</div>${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''} ${tele?'tele':''}" id="fboss" style="--bk:${b.k}">${bspr(b,112)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div><h2>${b.n}</h2><p id="tele" class="telep">${tele?b.n+' is winding up! GUARD!':''}</p><div class="bar"><i id="fbf" style="width:${S.bhp/b.hp*100}%;background:linear-gradient(90deg,var(--bad),var(--acc2))"></i></div><p id="fbt">${S.bhp}/${b.hp} HP. Weak to ${b.w}.</p><div class="bar${fx?' rc':''}"><i id="fpf" style="width:${Math.max(0,S.hp)/MX()*100}%;background:var(--good)"></i></div><p id="fpt">You: ${Math.max(0,S.hp)}/${MX()}. Each swing costs you ${rec} HP.</p><div class="btnrow"><button class="go swing" onclick="atk()" ${S.cd?'disabled':''}>${S.cd?'Recovering…':'Swing'}</button>${b.aggr?`<button id="gbtn" class="guard" onclick="guard()" ${gOn?'disabled':''}>${gOn?'Guard…':'Guard'}</button>`:''}</div><div class="log">${S.log.slice(0,8).map(l=>'<div>'+l+'</div>').join('')}</div></div>`}
-function rewardH(){const b=cb();return `<div class="box"><h2>${b.n} defeated.</h2><p>+${S.gain} coins${S.gdia?` and +${S.gdia} diamonds`:''} (you have ${S.coins} coins${S.cl1?` and ${S.dia} diamonds`:''}). Choose one part for your forge.</p><div class="parts">`+S.rew.map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="take(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button onclick="skip()">Skip reward</button></div>`}
+
 function showGift(g){GIFT=null;sfx.gift();const ps=(g.parts||[]).map(id=>P[id]).filter(Boolean);document.getElementById('modal').innerHTML=`<div class="ov"><div class="dlg" role="dialog" aria-modal="true" aria-label="Anniversary gift"><h2>Happy Anniversary!</h2><p>Thanks for playing Forgebound. Your gift: <b>${g.coins}</b> coins and <b>${g.dia}</b> diamonds, plus these parts that stay with you forever, even after New run.</p><div class="parts" style="grid-template-columns:1fr">${ps.map(p=>`<div class="part" style="--tc:${TC[p.t]}">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></div>`).join('')}</div><button class="go" onclick="closeM()">Awesome</button></div></div>`}
-/* top-down minigames */
+
+/* Minigames */
 const TL=24,GW=15,GH=13;
 const MGI={maze:{n:'Gem Maze',d:'Collect all 8 gems in the maze before time runs out. Slimes cost you 5 seconds.',unlock:0},dodge:{n:'Ember Dodge',d:'Survive 30 seconds of fireballs and grab the diamonds.',unlock:1},hunt:{n:'Slime Hunt',d:'Slash 15 slimes in 45 seconds. Press A to swing.',unlock:2}};
 const mgOK=id=>S.world==2&&S.b2>=MG_UNLOCK[MGI[id].unlock];
@@ -761,70 +702,35 @@ if(s.hp<=0)return{win:0,dia:Math.floor(s.k/2),txt:'The slimes got you.'};if(s.k>
 draw(cx){drawFloor(cx,Wg);sl.forEach(e=>dS(cx,'slime',e.x,e.y,3));if(!(p.inv&&Math.floor(p.inv*10)%2))dS(cx,'hero',p.x,p.y,3);
 if(p.sw>0){cx.fillStyle='#fff';for(let a=-1;a<=1;a++){const px=p.x+p.fx*26+(-p.fy)*a*10,py=p.y+p.fy*26+p.fx*a*10;cx.fillRect(Math.round(px)-3,Math.round(py)-3,6,6)}}},
 hud(){return `Hearts ${s.hp}   Slimes ${s.k}/15   Time ${Math.max(0,Math.ceil(s.t))}`}}}};
-function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}const a=document.getElementById('app'),s=st();let h=head();
-if(S.scr=='home'){h+=homeH()}else if(S.scr=='map'){h+=mapH()}else if(S.scr=='cut'){h+=cutH()}else if(S.scr=='minis'){h+=minisH()}else if(S.scr=='mini'){h+=miniH()}else if(S.scr=='minires'){h+=minresH()}else if(S.scr=='end2'){h+=end2H()}else if(S.scr=='admin'){h+=adminH()}else if(S.scr=='settings'){h+=settingsH()}else if(S.scr=='shop'){h+=shopH()}else if(S.scr=='forge'){
-h+=`<div class="grid"><div><div class="stage" style="--glow:${EC[s.e]}">${svg()}</div><div class="stats"><div class="stat"><span>Attack</span>${s.atk}</div><div class="stat"><span>Speed</span>${s.spd.toFixed(1)}</div><div class="stat"><span>Defense</span>${s.def}</div><div class="stat"><span>Crit</span>${Math.round(s.crit*100)}%</div><div class="stat"><span>Element</span>${s.e}</div><div class="stat"><span>Clears</span>${S.clears}</div></div></div><div>
-<div class="tabs">${Object.keys(SL).map(k=>`<button class="${S.tab==k?'on':''}" onclick="tab('${k}')">${SL[k]}</button>`).join('')}</div>
-<div class="parts">${P.filter(p=>p.s==S.tab&&S.owned.includes(p.id)).map(p=>`<button class="part ${S.eq[S.tab]==p.id?'on':''}" style="--tc:${TC[p.t]}" onclick="eq(${p.id})">${ico(p)}<span>${p.n}<small>${desc(p)}</small></span></button>`).join('')}</div>
-${forgeBoxH()}</div></div>`}
-else if(S.scr=='fight'){h+=fightH()}
-else if(S.scr=='lobby'){h+=lobbyH()}else if(S.scr=='wait'){h+=waitH()}else if(S.scr=='tower'){h+=towerH()}else if(S.scr=='trew'){h+=trewH()}else if(S.scr=='tover'){h+=toverH()}else if(S.scr=='over'){h+=`<div class="box" style="max-width:520px;margin:0 auto"><h2>Recoil beat you.</h2><p>You earned ${S.gain} coins${S.gdia?` and ${S.gdia} diamonds`:''} for the damage you dealt. Spend them in the shop on better parts or Vitality, then fight again.</p><button style="width:100%;margin-bottom:8px;text-align:center" onclick="S.scr='shop';render()">Open shop</button><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
-else{h+=rewardH()}
-a.innerHTML=h;if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap()}
 
-/* co-op tower (server-driven) */
+/* Co-op tower state */
 let T=null,R=null,ES=null;
 const NOLOGIN='Log in or create an account first. Co-op uses your account so the server knows your weapon.';
 const me=()=>R&&R.players.find(p=>p.u===USER.u)||{hp:100,dead:0,dealt:0,nm:'',eq:S.eq};
 const view=()=>{const m=me();return[m,...R.players.filter(p=>p.u!==USER.u)]};
 function sub(x){S.sub=x;render()}function pick(n){S.pick=n;render()}
-function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back to forge':'Back'}</button>`;let b;
-if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
-else if(sb=='menu')b=`<p>Climb a tower with friends. Tower bosses are their own, and they hit harder and have more health the more players you bring. Every 5th floor has a special boss.</p><button class="go" onclick="sub('create')">Create room</button><button style="margin-top:8px;width:100%;text-align:center" onclick="sub('join')">Join room</button>`;
-else if(sb=='create'){const pk=S.pick||2;b=`<p>Choose the maximum number of players. You will wait in a room until you start the tower.</p><div class="tabs">${[2,3,4].map(n=>`<button class="${pk==n?'on':''}" onclick="pick(${n})">${n} players</button>`).join('')}</div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="createRoom()">Create room</button>`}
-else b=`<p>Enter the room code your friend shared.</p><div class="dlg" style="box-shadow:none;border:0!important;padding:0;max-width:none"><label>Room code<input id="rc" maxlength="12"></label></div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="joinRoom()">Join room</button>`;
-return `<div class="box" style="max-width:480px;margin:0 auto"><h2>Co-op Tower</h2>${b}${bk}</div>`}
+
 const LE=m=>{const e=document.getElementById('lerr');if(e)e.textContent=m};
 async function createRoom(){LE('Creating…');try{await save();const j=await api('/api/room/create',{cap:S.pick||2});openRoom(j.code)}catch(e){LE(e.message)}}
 async function joinRoom(){const code=document.getElementById('rc').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');if(code.length<3)return LE('Room code: 3 to 12 letters or numbers.');
 LE('Joining…');try{await save();const j=await api('/api/room/join',{code});openRoom(j.code)}catch(e){LE(e.message)}}
-function closeRoom(){if(ES)ES.close();ES=null;R=null;T=null}
-function openRoom(code){closeRoom();T={cd:0,fx:0,last:null,seq:-1,sig:'',hold:0};
-ES=new EventSource(`/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
-ES.onerror=()=>{if(ES&&ES.readyState==2){closeRoom();S.scr='lobby';S.sub='menu';render()}}}
+
 const PH={wait:'wait',fight:'tower',reward:'trew',over:'tover'};
-function onRoom(){if(!T||T.hold)return;(R.cu||[]).forEach(Game.addCustom);const ph=PH[R.phase],sig=R.phase+R.floor+R.players.map(p=>p.u).join(),ev=R.ev,isNew=ev&&ev.seq>T.seq;S.tb=Math.max(S.tb||0,R.best);if(R.coins!=null)S.coins=R.coins;
-if(S.scr=='tower'&&ph!='tower'&&isNew){T.seq=ev.seq;T.hold=1;animate(ev);setTimeout(()=>{T.hold=0;if(T)onRoom()},950);return}
-if(S.scr!=ph||sig!==T.sig){const first=T.seq<0;T.sig=sig;sfx[{wait:'join',tower:'start',trew:'clear',tover:'lose'}[ph]]();S.scr=ph;T.cd=0;T.fx=0;T.last=null;if(ev)T.seq=ev.seq;render();return}
-if(isNew){T.seq=ev.seq;animate(ev);if(ev.by===USER.u)return}
-tupd()}
-function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx=1;T.cd=1;render();T.fx=0;setTimeout(()=>{if(T){T.cd=0;if(S.scr=='tower')render()}},Math.max(650,1000/st().spd));return}
-const v=view(),k=v.findIndex(p=>p.u===ev.by);if(k>0)rswing(k,v[k])}
+
 function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
 const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
 const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
-function teamH(){return view().map(p=>`<div class="tm ${p.dead||p.off?'dn':''}"><span>${esc(p.nm)}${p.u===USER.u?' (you)':''}</span><span>${p.off?'offline':p.dead?'down':p.hp+' HP'}</span><span>dealt ${p.dealt}</span></div>`).join('')}
-function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';
-document.getElementById('btxt').textContent=`${R.bossHp}/${R.bossMax} HP. Weak to ${R.boss.w}. Recoil ${Game.recoil(R.boss.r,st().def)} per swing.`;
-document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=m.hp/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`You: ${m.hp}/${m.mx||100}`;
-view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
+
 function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
 const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
 const act=isH?`<button class="go" onclick="startTower()" ${ps.length<2?'disabled':''}>${ps.length<2?'Need 2 players to start':'Start tower'}</button>`:`<p>Waiting for the host to start the tower.</p>`;
 return `<div class="box" style="max-width:560px;margin:0 auto"><h2>Waiting room</h2><p>Room code: <b>${esc(R.code)}</b>. Friends choose Join room and enter it. Players: ${ps.length}/${R.cap}</p><div class="wsg">${sl}</div><div id="lerr" class="err"></div>${act}<button style="margin-top:8px;width:100%;text-align:center" onclick="tleave()">Leave room</button></div>`}
 function startTower(){api('/api/room/start',{}).catch(e=>LE(e.message))}
-function tatk(){if(!T||T.cd||R.phase!='fight'||me().dead)return;T.cd=1;const b=document.querySelector('.arena .go');if(b){b.disabled=true;b.textContent='Recovering…'}
-api('/api/room/swing',{}).catch(()=>{T.cd=0;render()})}
-const SLOT=['left:calc(50% - 150px);top:0;--d:1','left:calc(50% + 86px);top:0;--d:-1','left:calc(50% - 150px);top:145px;--d:1','left:calc(50% + 86px);top:145px;--d:-1'];
-function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl${k}" style="${SLOT[k]}"><div class="tsw ${fx&&k==0?'go':''}" id="tsw${k}" style="${k==0?aura():''}">${svg(p.eq,'0 0 32 66',50,104)}</div><div class="tag">${esc(p.nm)}</div></div>`}
-function towerH(){const s=st(),b=R.boss,L=T.last,fx=T.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),m=me(),rec=Game.recoil(b.r,s.def);
-return `<div class="box arena" style="max-width:560px;margin:0 auto"><div class="tstage" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div><h2>Floor ${R.floor}: ${b.n}${b.sp?' (special boss)':''}</h2><div class="bar"><i id="bfill" style="width:${R.bossHp/R.bossMax*100}%;background:linear-gradient(90deg,var(--bad),var(--acc2))"></i></div><p id="btxt">${R.bossHp}/${R.bossMax} HP. Weak to ${b.w}. Recoil ${rec} per swing.</p><div class="bar${fx?' rc':''}"><i id="myhp" style="width:${m.hp/(m.mx||100)*100}%;background:var(--good)"></i></div><p id="myhpt">You: ${m.hp}/${m.mx||100}</p>${m.dead?'<p>You are down. A teammate must clear the floor to revive you.</p>':''}<button class="go swing" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${m.dead?'Down':T.cd?'Recovering…':'Swing'}</button><p style="margin-top:10px">Room code: <b>${esc(R.code)}</b></p><div id="team" class="team">${teamH()}</div><button onclick="tleave()" style="margin-top:10px">Leave tower</button></div>`}
-function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
-function ttake(id){api('/api/room/reward',{id}).then(j=>{S.owned=j.owned}).catch(()=>{})}
-function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
-function tleave(){api('/api/room/leave',{}).catch(()=>{});closeRoom();S.scr='forge';render()}
 
-/* ================= v3 layer (overrides earlier definitions) ================= */
+function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
+function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
+
+/* Navigation icons & UI helpers */
 const IC={forge:["...xx...","...xx...","...xx...","xxxxxxxx",".yyyyyy.","..yyyy..","..yyyy..",".yyyyyy."],
 map:["xxxxxxxx","x.y..y.x","x..yy..x","x.y..y.x","x..yy..x","x.y..y.x","x......x","xxxxxxxx"],
 shop:["..xxxx..",".x....x.","xxxxxxxx","xyyyyyyx","xyyxxyyx","xyyyyyyx","xyyyyyyx","xxxxxxxx"],
@@ -875,7 +781,7 @@ function eq(id){sfx.equip();S.dp=id;S.eq[P[id].s]=id;save();render()}
 async function doReset(){const perm=S.perm||[],cl=S.clears,tb=S.tb,ann=S.ann,gems=S.gems,gl=S.gl,fxo=S.fxo,fx=S.fx,rev=S.rev,dr=S.dailyReady;S=fresh(cl);Object.assign(S,{perm,tb,ann,gems,gl,fxo,fx,rev,dailyReady:dr});
 S.owned=[...new Set([...W1BASE,...perm.filter(i=>!P[i].wd)])];S.oa=[...new Set([...W2BASE,...perm.filter(i=>P[i].wd)])];S.scr='forge';
 if(USER){try{const j=await api('/api/save',{reset:1});(j.customs||[]).forEach(Game.addCustom);applySave(j.save)}catch(e){STATE='save failed'}}render()}
-/* ----- accounts ----- */
+
 function setUser(j){USER={u:j.user.username,name:j.user.name,verified:j.user.verified,needsInfo:j.user.needsInfo,age:j.user.age,caps:j.user.caps||{}}}
 function afterAuth(j){TOKEN=j.token;localStorage.setItem('fb:token',TOKEN);setUser(j);(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null;S.dailyReady=!!j.dailyReady}
 async function connect(){loadNews();
@@ -908,7 +814,6 @@ async function loadNews(){try{const r=await fetch('/api/news');NEWS=await r.json
 function newsKey(){return NEWS?(NEWS.news[0]?NEWS.news[0].id:0)+'|'+NEWS.version:''}
 function newsUnread(){return NEWS&&localStorage.getItem('fb:news')!==newsKey()}
 
-/* ----- palettes, effects ----- */
 const PAL={aurora:{d:{bg:'#0d1322',bg2:'#172038',panel:'#121a30',line:'#2a3a66',tx:'#e6efff',mut:'#8fa4d0',acc:'#4de0c1',acc2:'#7a6cff',ink:'#042019',px:'#03060d'},l:{bg:'#e9f1fb',bg2:'#d9e6f6',panel:'#fbfdff',line:'#b7c9e6',tx:'#13203c',mut:'#546a92',acc:'#079a7f',acc2:'#5646dc',ink:'#ffffff',px:'#13203c'}},
 ember:{d:{bg:'#0f121a',bg2:'#1a1f2e',panel:'#171c29',line:'#2c3448',tx:'#eceff6',mut:'#8f9ab2',acc:'#ffb347',acc2:'#ff6b3d',ink:'#1a1206',px:'#05060a'},l:{bg:'#f1eee8',bg2:'#e6e1d8',panel:'#fffdf9',line:'#d3cbbd',tx:'#211d17',mut:'#6d655a',acc:'#c7710a',acc2:'#b3400f',ink:'#ffffff',px:'#241a0e'}},
 ocean:{d:{bg:'#07161f',bg2:'#0e2733',panel:'#0b1f2a',line:'#1d4558',tx:'#e3f6ff',mut:'#7fb0c8',acc:'#38c6ff',acc2:'#2f7dff',ink:'#02141d',px:'#020b10'},l:{bg:'#e6f4fa',bg2:'#d2e8f2',panel:'#f8fcff',line:'#a9cde0',tx:'#0d2a38',mut:'#4a7a92',acc:'#0786c2',acc2:'#1d5fd0',ink:'#ffffff',px:'#0d2a38'}},
@@ -919,8 +824,7 @@ function applySet(){const dk=CF.theme=='dark'||(CF.theme!='light'&&window.matchM
 function fxCol(){const f=FX.find(x=>x.id==S.fx);return f?f.c:''}
 const fxc=c=>fxCol()||c;
 function aura(){const c=fxCol();return c?`filter:drop-shadow(0 0 7px ${c}) drop-shadow(0 0 14px ${c})`:''}
-function ico(p,hh){const E={h:0,b:6,g:13,c:18};E[p.s]=p.id;const v=VB[p.s][0],H=hh||(p.s=='b'||p.s=='h'?52:34),hv=p.s=='b'||p.s=='h'?H:Math.round(H*.7);return svg(E,v.join(' '),Math.round(hv*v[2]/v[3]),hv)}
-/* ----- shell: top bar, navigation ----- */
+
 function head(){const chips=`<span class="chip" title="Coins"><span class="coin"></span>${S.coins||0}</span>${S.cl1?`<span class="chip" title="Diamonds"><span class="dia"></span>${S.dia||0}</span>`:''}${USER?`<span class="chip" title="Gems"><span class="gm"></span>${S.gems||0}</span>`:''}${STATE?`<span class="chip bad">${STATE}</span>`:''}`;
 const acct=USER?`<button class="avb" onclick="openAcct()" aria-label="Account">${esc((USER.name[0]||'?').toUpperCase())}${USER.verified?'':'<i class="wdot"></i>'}</button>`:`<button class="avb" onclick="openM()" aria-label="Log in or create account">${ic('user',20)}</button>`;
 return `<div class="tb"><button class="logo" onclick="S.scr='home';render()" aria-label="Home">${ic('home',18)}<b>${S.cl1?'W'+S.world:'FB'}</b></button><div class="chips">${chips}</div>${acct}</div>`}
@@ -928,10 +832,10 @@ const NAVI=[['forge','Forge','forge'],['map','Map','map'],['shop','Shop','shop']
 const NAVS=['forge','map','shop','friends','news','settings','help','admin','minis','lobby'];
 function navH(){return NAVI.map(([s,l,i])=>`<button class="nb ${S.scr==s?'on':''}" onclick="go('${s}')">${ic(i,22)}<span>${l}</span>${s=='news'&&newsUnread()?'<i class="nbd"></i>':''}</button>`).join('')}
 function go(s){S.scr=s;render()}
-/* ----- home ----- */
+
 function homeH(){const ann=Game.annYear(Date.now()),b=(i,l,f,x)=>`<button class="hb" onclick="${f}">${ic(i,30)}<span>${l}</span>${x||''}</button>`;
 return `<div class="home"><div class="ttl">FORGEBOUND</div><div class="sub">Forge. Fight. Cross two worlds.</div><div class="hero">${svg(null,'0 0 32 66',56,116)}</div>${ann?'<div class="ann">Anniversary event! Free gifts that stay forever.</div>':''}${S.dailyReady?`<button class="daily" onclick="claimDaily()">${ic('gift',18)} Daily reward ready</button>`:''}<div class="igrid">${b('play','Play',"S.scr='forge';render()")}${b('coop','Co-op',"S.scr='lobby';S.sub='menu';render()")}${b('map','Map',"S.scr='map';render()")}${b('shop','Shop',"S.scr='shop';render()")}${b('friends','Friends',"go('friends')")}${b('news','News',"go('news')",newsUnread()?'<i class="nbd"></i>':'')}${b('help','Help',"S.scr='help';render()")}${b('gear','Settings',"S.scr='settings';render()")}${USER&&USER.u==='vilocity'?b('crown','Admin','openAdmin()'):b('gem','Gems',"S.shopc='g';S.scr='shop';render()")}</div></div>`}
-/* ----- forge (compact) ----- */
+
 function forgeBossH(){const b=nextBoss(),oth=S.world==2?1:2;let h='<div class="bcard">';
 if(b)h+=`<div class="bc1"><span class="bsp">${bspr(b,38)}</span><div class="bt"><b>${S.world==2?'W2 · ':''}${esc(b.n)}</b><small>${b.hp} HP · recoil ${b.r} · weak to ${b.w}${b.aggr?' · fights back':''}</small></div><button class="go sm" onclick="start()">Fight</button></div>`;
 else h+=`<div class="bc1"><div class="bt"><b>World ${S.world} complete</b><small>Repeat bosses from the Map for half rewards.</small></div></div>`;
@@ -942,7 +846,7 @@ return `<div class="fg"><div class="fpv" style="--glow:${EC[s.e]}">${svg(null,'0
 <div class="tabs t4">${Object.keys(SL).map(k=>`<button class="${t==k?'on':''}" onclick="S.tab='${k}';S.dp=0;render()">${SL[k]}</button>`).join('')}</div>
 <div class="tiles">${all.map(p=>`<button class="tile ${S.eq[t]==p.id?'on':''}" style="--tc:${TC[p.t]}" onclick="eq(${p.id})" aria-label="${esc(p.n)}">${ico(p,40)}<small>${esc(p.n)}</small></button>`).join('')}</div>
 <div class="det" style="--tc:${TC[dp.t]}"><b>${esc(dp.n)}</b> <span>${desc(dp)}</span></div>${forgeBossH()}`}
-/* ----- shop ----- */
+
 const ownedAny=id=>S.owned.includes(id)||S.oa.includes(id)||S.gl.includes(id);
 function buy(id){const p=P[id];if(ownedAny(id)||p.cu||p.an||p.gl||p.st)return;const d=!!p.wd,pr=d?PRICE2[p.t]:PRICE[p.t];if(pr==null)return;if((d?S.dia:S.coins)<pr){sfx.deny();return}if(d)S.dia-=pr;else S.coins-=pr;(d==(S.world==2)?S.owned:S.oa).push(id);sfx.buy();toast('Bought '+p.n);S.sel=0;save();render()}
 const hpOf=w=>S.world==w?S.hpup:S.hpa;
@@ -953,12 +857,13 @@ return `<div class="tabs t3"><button class="${!dm?'on':''}" onclick="scur('c')">
 <div class="tabs t5">${[['all','All'],['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${f==k?'on':''}" onclick="stab('${k}')">${n}</button>`).join('')}</div>
 <div class="tiles tl2">${l<5?`<button class="tile vit" ${have<vc?'disabled':''} onclick="buyHp(${w})"><b>+HP</b><small>Vitality ${l}/5</small><em>${vc} ${dm?'dia':'coins'}</em></button>`:''}${items.map(p=>`<button class="tile ${S.sel==p.id?'on':''}" style="--tc:${TC[p.t]}" onclick="ssel(${p.id})" aria-label="${esc(p.n)}">${ico(p,36)}<small>${esc(p.n)}</small><em>${pr(p)}</em></button>`).join('')}</div>
 <div class="det" style="--tc:${sel?TC[sel.t]:'var(--line)'}">${sel&&items.includes(sel)?`<b>${esc(sel.n)}</b> <span>${desc(sel)}</span><button class="go sm" ${have<pr(sel)?'disabled':''} onclick="buy(${sel.id})">Buy ${pr(sel)} ${dm?'diamonds':'coins'}</button>`:`<span>Tap an item. You have ${S.coins} coins${S.cl1?` and ${S.dia} diamonds`:''}. ${dm?'These are World 2 parts.':'These are World 1 parts.'} God parts are never sold.</span>`}</div>`}
+
 let SHOPINFO=null;
 async function loadShop(){try{SHOPINFO=await api('/api/shop')}catch(e){SHOPINFO={packs:Game.GEM_PACKS,payments:false,canBuy:false}}if(S.scr=='shop'&&S.shopc=='g')render()}
 function gemShopH(){const tabs=`<div class="tabs t3"><button onclick="scur('c')">Coins</button>${S.cl1?"<button onclick=\"scur('d')\">Diamonds</button>":''}<button class="on">Gems</button></div>`;
 if(!USER)return tabs+`<div class="box"><p>Log in to buy gems.</p><button class="go" onclick="openM()">Log in</button></div>`;
 if(!SHOPINFO)loadShop();const ok=!!(USER.caps&&USER.caps.buy);
-const packs=(SHOPINFO?SHOPINFO.packs:Game.GEM_PACKS).map(k=>`<button class="pack" ${ok&&SHOPINFO&&SHOPINFO.payments?'':'disabled'} onclick="checkout('${k.id}')">${ic('gem',22)}<b>${k.gems}</b><small>$${(k.cents/100).toFixed(2)}</small></button>`).join('');
+const packs=(SHOPINFO?SHOPINFO.packs:Game.GEM_PACKS).map(k=>`<button class="pack" ${ok?'':'disabled'} onclick="checkout('${k.id}')">${ic('gem',22)}<b>${k.gems}</b><small>$${(k.cents/100).toFixed(2)}</small></button>`).join('');
 const items=P.filter(p=>p.gl).map(p=>`<button class="tile ${S.gl.includes(p.id)?'on':''}" style="--tc:${TC[7]}" onclick="gsel(${p.id})" aria-label="${esc(p.n)}">${ico(p,36)}<small>${esc(p.n)}</small><em>${S.gl.includes(p.id)?'owned':p.gp}</em></button>`).join('');
 const fxs=FX.map(f=>`<button class="fxb ${S.fx==f.id?'on':''}" onclick="${S.fxo.includes(f.id)?`equipFx('${f.id}')`:`buyFx('${f.id}')`}"><i style="background:${f.c}"></i>${f.n}<em>${S.fxo.includes(f.id)?(S.fx==f.id?'on':'equip'):f.g}</em></button>`).join('');
 const sel=P[S.gsel];
@@ -968,8 +873,7 @@ function adoptGem(sv){S.gems=sv.gems;S.gl=sv.gl;S.fxo=sv.fxo;S.rev=sv.rev|0;rend
 async function buyGem(id){try{const j=await api('/api/gems/buy',{kind:'item',id});adoptGem(j.save);sfx.buy();toast('Bought '+P[id].n)}catch(e){toast(e.message);sfx.deny()}}
 async function buyFx(id){try{const j=await api('/api/gems/buy',{kind:'fx',id});adoptGem(j.save);sfx.buy();toast('Effect unlocked')}catch(e){toast(e.message);sfx.deny()}}
 function equipFx(id){S.fx=id;sfx.equip();save();render()}
-async function checkout(pack){try{const j=await api('/api/shop/creem-checkout',{pack});location.href=j.url}catch(e){toast(e.message)}}
-/* ----- rewards, settings, news, help ----- */
+
 function overH(){return `<div class="box"><h2>Recoil beat you.</h2><p>You earned ${S.gain} coins${S.gdia?` and ${S.gdia} diamonds`:''} for the damage you dealt. Spend them in the shop, then try again.</p><div class="btnrow"><button onclick="S.scr='shop';render()">Shop</button><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div></div>`}
 function rewardH(){const b=cb(),rep=isRep();return `<div class="box"><h2>${b.n} defeated.</h2><p>+${S.gain} coins${S.gdia?` and +${S.gdia} diamonds`:''}${rep?' (repeat fight: half rewards)':''}. Choose one part.</p><div class="parts">`+S.rew.map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="take(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button onclick="skip()">Skip reward</button></div>`}
 function settingsH(){return `<div class="box"><h2>Settings</h2>${opt('snd','Sound effects',[[1,'On'],[0,'Off']])}${opt('vol','Volume',[['low','Low'],['med','Mid'],['high','High']])}${opt('anim','Animations',[[1,'On'],[0,'Off']])}${opt('theme','Theme',[['auto','Auto'],['dark','Dark'],['light','Light']])}${opt('pal','Colors',[['aurora','Aurora'],['ember','Ember'],['ocean','Ocean'],['forest','Forest'],['royal','Royal'],['candy','Candy']])}<div class="rowb"><button onclick="S.scr='help';render()">How to play</button>${USER?'<button onclick="openAcct()">Account</button>':'<button onclick="openM()">Log in</button>'}${USER&&USER.u==='vilocity'?'<button onclick="openAdmin()">Admin</button>':''}</div><div class="danger"><button onclick="reset()">${S.rs?'Tap again: erase this run':'New run'}</button><small>New run resets parts, coins, diamonds and progress in both worlds. Prism items, effects, anniversary items and records stay.</small></div><p class="fine">Forgebound v${VERSION}</p></div>`}
@@ -979,7 +883,7 @@ const pn=(NEWS?NEWS.patch:Game.PATCH_NOTES).map(v=>`<div class="nw"><b>v${v.v}</
 return `<h3>Announcements</h3>${an}<h3>Patch notes</h3>${pn}<h3>Tower leaderboard</h3><div id="lbd" class="fine">Loading…</div>`}
 async function loadTop(){try{const r=await fetch('/api/top'),j=await r.json(),e=document.getElementById('lbd');if(e)e.innerHTML=j.top.length?j.top.map((x,i)=>`<div class="lbr"><b>${i+1}</b><span>${esc(x.name)}</span><em>floor ${x.tb}</em></div>`).join(''):'No scores yet. Be the first to climb the tower.'}catch(e){}}
 function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back</button></div>`}
-/* ----- co-op fixes ----- */
+
 function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back':'Back'}</button>`;let b;
 if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
 else if(S.world==2)b=`<p>The co-op tower uses World 1 gear. Travel to World 1 to play it.</p><button class="go" onclick="travel(1)">Travel to World 1</button>`;
@@ -988,12 +892,13 @@ else if(sb=='menu')b=`<p>Climb a tower with friends. Tower bosses hit harder and
 else if(sb=='create'){const pk=S.pick||2;b=`<p>Choose the maximum number of players.</p><div class="tabs">${[2,3,4].map(n=>`<button class="${pk==n?'on':''}" onclick="pick(${n})">${n} players</button>`).join('')}</div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="createRoom()">Create room</button>`}
 else b=`<p>Enter the room code your friend shared.</p><label>Room code<input id="rc" maxlength="12"></label><div id="lerr" class="err" role="alert"></div><button class="go" onclick="joinRoom()">Join room</button>`;
 return `<div class="box"><h2>Co-op Tower</h2>${b}${bk}</div>`}
+
 function openRoom(code){closeRoom();T={cd:0,cdt:0,cdu:0,fx:0,last:null,seq:-1,sig:'',hold:0};
 ES=new EventSource(`/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
 ES.onerror=()=>{if(ES&&ES.readyState==2){closeRoom();S.scr='lobby';S.sub='menu';render()}}}
 function closeRoom(){if(T&&T.cdt)clearTimeout(T.cdt);if(ES)ES.close();ES=null;R=null;T=null}
 function cdMs(){return Math.max(650,1000/st().spd)}
-function tbtn(){const b=document.querySelector('.arena .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);b.textContent=dead?'Down':T.cd?'Recovering…':'Swing'}
+
 function onRoom(){if(!T||T.hold)return;(R.cu||[]).forEach(Game.addCustom);const ph=PH[R.phase],sig=R.phase+R.floor+R.players.map(p=>p.u).join();S.tb=Math.max(S.tb||0,R.best);if(R.coins!=null)S.coins=R.coins;
 const evs=(R.evs&&R.evs.length?R.evs:R.ev?[R.ev]:[]).filter(e=>e.seq>T.seq);
 if(T.cd&&Date.now()>T.cdu+500){T.cd=0;tbtn()}
@@ -1007,7 +912,7 @@ api('/api/room/swing',{}).catch(()=>{if(T){T.cd=0;clearTimeout(T.cdt);tbtn()}})}
 function ttake(id){api('/api/room/reward',{id}).then(j=>{if(S.world==1){S.owned=j.owned;S.rev=j.rev|0}}).catch(()=>{})}
 function tleave(){api('/api/room/leave',{}).catch(()=>{});closeRoom();S.scr='forge';render()}
 
-/* ----- friends, chat, trading ----- */
+/* Friends, chat, trading */
 const FR={tab:'list',friends:[],inc:[],out:[],trades:[],chat:null,msgs:[],tr:null,err:'',timer:0};
 function friendsH(){if(!USER)return `<div class="box"><h2>Friends</h2><p>Log in to add friends, chat and trade.</p><button class="go" onclick="openM()">Log in</button></div>`;
 if(!USER.caps.social)return `<div class="box"><h2>Friends</h2><p>Friends, chat and trading need a verified email and age 13 or older.</p>${USER.verified?'':'<button class="go" onclick="openVerify()">Enter verification code</button>'}</div>`;
@@ -1038,7 +943,8 @@ el.innerHTML=`<div class="box"><div class="chh"><button onclick="FR.tr=null;rend
 function frPick(side,id){const a=FR.tr[side],i=a.indexOf(id);if(i>=0)a.splice(i,1);else if(a.length<4)a.push(id);frPaint()}
 async function frSendTrade(){const t=FR.tr;try{await api('/api/trade/offer',{to:t.to,world:t.world,give:t.give,want:t.want});FR.tr=null;FR.tab='trade';toast('Offer sent');sfx.buy();render()}catch(e){toast(e.message);sfx.deny()}}
 async function frTr(a,id){try{const j=await api('/api/trade/'+a,{id});if(a=='accept'){adopt(j.save);sfx.buy();toast('Trade complete!')}frRefresh();render()}catch(e){toast(e.message);frRefresh()}}
-/* ----- admin ----- */
+
+/* Admin helper functions */
 function admW(p){const w=AD.wf;return w=='all'||(w=='1'&&!p.wd&&!p.an&&!p.gl)||(w=='2'&&p.wd&&!p.an)||(w=='an'&&p.an)||(w=='gl'&&p.gl)}
 function admTiles(){const q=(AD.q||'').toLowerCase();return P.filter(p=>!p.cu&&p.s==AD.fs&&admW(p)&&(!q||p.n.toLowerCase().includes(q))).sort((a,b)=>a.t-b.t||a.n.localeCompare(b.n)).map(p=>`<button class="tile" style="--tc:${TC[p.t]}" onclick="admGive(${p.id})" aria-label="${esc(p.n)}">${ico(p,34)}<small>${esc(p.n)}</small></button>`).join('')}
 function admList(){const e=document.getElementById('admtiles');if(e)e.innerHTML=admTiles()}
@@ -1047,6 +953,7 @@ const admGems=()=>adm('/api/admin/gems',{username:AD.who,amount:+AD.amt},j=>`${A
 const admVerify=()=>adm('/api/admin/verify',{username:AD.who},()=>`${AD.who} is verified.`);
 const admNews=()=>{const t=document.getElementById('nt').value,x=document.getElementById('nx').value;adm('/api/admin/news',{title:t,text:x},()=>'Announcement posted.').then(loadNews)};
 const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNews);
+
 function adminH(){const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;let b;
 const tab=(k,l)=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${l}</button>`;
 if(AD.tab=='give')b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
@@ -1054,195 +961,39 @@ else if(AD.tab=='custom'){const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type=
 b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>World<select onchange="AD.cust.world=this.value;render()"><option value="1" ${c.world==1?'selected':''}>World 1</option><option value="2" ${c.world==2?'selected':''}>World 2</option></select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.slice(0,7).map((n,i)=>`<option value="${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`}
 else if(AD.tab=='coins')b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go sm" onclick="admCoins()">Coins</button><button class="go sm" onclick="admDia()">Diamonds</button><button class="go sm" onclick="admGems()">Gems</button></div>`;
 else if(AD.tab=='news')b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>${esc(n.title)}</b><button onclick="admDelNews(${n.id})">Delete</button></div>`).join('')}`;
+else if(AD.tab=='gcash')b=`<h3>Pending GCash Requests</h3><div id="gcashAdminList"><p class="fine">Loading requests...</p></div>`;
 else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div>`;
-return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`}
-  // ----- GCash Admin Review Functions -----
-async function loadAdminGcash() {
-  try {
-    const data = await api('/api/admin/gcash-requests');
-    const el = document.getElementById('gcashAdminList');
-    if (!el) return;
-
-    if (!data.pending.length) {
-      el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
-      return;
-    }
-
-    el.innerHTML = data.pending.map(item => `
-      <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div>
-          <b>@${esc(item.user)}</b> · Ref: <span style="color:var(--acc);">${esc(item.ref)}</span><br>
-          <small>${item.gems} Gems ($${(item.cents / 100).toFixed(2)})</small>
-        </div>
-        <div class="btnrow">
-          <button class="go sm" onclick="confirmGcash('${item.id}')">Confirm</button>
-          <button class="sm" onclick="rejectGcash('${item.id}')">Reject</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    toast(e.message);
-  }
-}
-
-async function confirmGcash(requestId) {
-  try {
-    const res = await api('/api/admin/gcash-confirm', { requestId });
-    toast(res.message);
-    loadAdminGcash();
-  } catch (e) { toast(e.message); }
-}
-
-async function rejectGcash(requestId) {
-  try {
-    const res = await api('/api/admin/gcash-reject', { requestId });
-    toast(res.message);
-    loadAdminGcash();
-  } catch (e) { toast(e.message); }
-}
-
-/* ----- render ----- */
-function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
-const a=document.getElementById('app');st();
-const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
-const h=M();document.getElementById('tbar').innerHTML=head();
-const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
-const top=RL.scr!=S.scr;RL.scr=S.scr;a.innerHTML=h;if(top)a.scrollTop=0;
-if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap();if(S.scr=='friends'&&USER&&USER.caps.social)frStart();if(S.scr=='news')loadTop();if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
-if(S.scr=='admin')loadAdminGcash();} // <-- Automatically fetches pending payments when Admin tab opens
-
-const RL={scr:''};
-AD.cust.world=1;AD.q='';
-
-function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '';if(cur)return i<pr?`<button class="go sm" onclick="start(${i})">Fight again</button>`:`<button class="go sm" onclick="start()">Fight</button>`;return S.cl1?`<button class="go sm" onclick="travel(${w})">Travel to World ${w}</button>`:''}
-/* ----- render ----- */
-function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
-const a=document.getElementById('app');st();
-const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
-const h=M();document.getElementById('tbar').innerHTML=head();
-const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
-const top=RL.scr!=S.scr;RL.scr=S.scr;a.innerHTML=h;if(top)a.scrollTop=0;
-if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap();if(S.scr=='friends'&&USER&&USER.caps.social)frStart();if(S.scr=='news')loadTop();if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop()}
-const RL={scr:''};
-AD.cust.world=1;AD.q='';
+return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('gcash','GCash')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`}
 
 function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '';if(cur)return i<pr?`<button class="go sm" onclick="start(${i})">Fight again</button>`:`<button class="go sm" onclick="start()">Fight</button>`;return S.cl1?`<button class="go sm" onclick="travel(${w})">Travel to World ${w}</button>`:''}
 
-/* ===== v4: new battle screens (solo fights and co-op tower) ===== */
+/* ===== v4: battle screens ===== */
 const elc=e=>EC[e]||'#8a8f99';
 const cdBar=(on,ms)=>`<i class="cdf" ${on?`style="animation-duration:${ms}ms"`:'style="display:none"'}></i>`;
 function fightH(){const s=st(),b=cb(),rec=Game.recoil(b.r,s.def,b.fl),L=S.last,fx=S.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),ag=S.ag,tele=ag&&ag.tele,gOn=ag&&Date.now()<ag.gcd,pct=Math.max(0,S.bhp)/b.hp*100,ph=Math.max(0,S.hp)/MX()*100;
 return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class="bt-name"><b>${esc(b.n)}</b>${b.w2?'<small>WORLD 2</small>':''}${isRep()?'<small>REPEAT</small>':''}<span class="wk" style="--ec:${elc(b.w)}">weak: ${b.w}</span></div><div class="bt-hp"><i id="fbf" style="width:${pct}%"></i><span id="fbt">${Math.max(0,S.bhp)} / ${b.hp}</span></div></div>
 <div class="bt-stage"><div class="sw ${fx?'go':''}" style="${aura()}">${svg(null,'0 0 32 66',63,130)}</div>${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''} ${tele?'tele':''}" id="fboss" style="--bk:${b.k}">${bspr(b,160)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div><div id="tele" class="bt-tele ${tele?'on':''}">${tele?esc(b.n)+' is winding up! GUARD!':''}</div><div class="bt-ev" id="evl">${S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}</div></div>
 <div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="fpf" style="width:${ph}%"></i><span id="fpt">${Math.max(0,S.hp)} / ${MX()}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span class="el" style="--ec:${elc(s.e)}">${s.e}</span></div><div class="bt-btns"><button class="go swing big" onclick="atk()" ${S.cd?'disabled':''}>${cdBar(S.cd,cdMs())}<span>${S.cd?'...':'SWING'}</span></button>${b.aggr?`<button id="gbtn" class="guard big" onclick="guard()" ${gOn?'disabled':''}>${gOn?'...':'GUARD'}</button>`:''}<button class="ret" onclick="retreat()">Retreat</button></div></div></div>`}
+
 function fupd(){if(S.scr!='fight')return;const b=cb(),$=id=>document.getElementById(id);if(!$('fbf'))return;
 $('fbf').style.width=Math.max(0,S.bhp)/b.hp*100+'%';$('fbt').textContent=`${Math.max(0,S.bhp)} / ${b.hp}`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'%';$('fpt').textContent=`${Math.max(0,S.hp)} / ${MX()}`;
 const ag=S.ag;$('fboss').classList.toggle('tele',!!(ag&&ag.tele));const t=$('tele');t.textContent=ag&&ag.tele?b.n+' is winding up! GUARD!':'';t.classList.toggle('on',!!(ag&&ag.tele));
 const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'...':'GUARD'}
 $('evl').innerHTML=S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}
 function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
+
 const SLOT2=['left:max(4px,calc(50% - 168px));top:4%','left:calc(50% + 100px);top:4%','left:max(4px,calc(50% - 168px));top:52%','left:calc(50% + 100px);top:52%'],SLD=[1,-1,1,-1];
 function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl${k}" style="${SLOT2[k]};--d:${SLD[k]}"><div class="tsw ${fx&&k==0?'go':''}" id="tsw${k}" style="${k==0?aura():''}">${svg(p.eq,'0 0 32 66',50,104)}</div><div class="tag">${esc(p.nm)}</div></div>`}
 function teamH(){return view().map(p=>`<div class="tc ${p.dead||p.off?'dn':''} ${p.u===USER.u?'me':''}"><b>${esc(p.nm)}</b><div class="bt-hp sm"><i style="width:${Math.max(0,p.hp)/(p.mx||100)*100}%"></i></div><small>${p.off?'offline':p.dead?'down':p.hp+' HP'} · ${p.dealt}</small></div>`).join('')}
 function towerH(){const s=st(),b=R.boss,L=T.last,fx=T.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),m=me(),rec=Game.recoil(b.r,s.def),pct=R.bossHp/R.bossMax*100,ph=Math.max(0,m.hp)/(m.mx||100)*100;
 return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class="bt-name"><b>Floor ${R.floor}: ${esc(b.n)}</b>${b.sp?'<small>SPECIAL</small>':''}<span class="wk" style="--ec:${elc(b.w)}">weak: ${b.w}</span></div><div class="bt-hp"><i id="bfill" style="width:${pct}%"></i><span id="btxt">${R.bossHp} / ${R.bossMax}</span></div></div>
-<div class="bt-stage tw" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div>
+<div class="bt-stage tw" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:\${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div>
 <div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="myhp" style="width:${ph}%"></i><span id="myhpt">${Math.max(0,m.hp)} / ${m.mx||100}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span>Room ${esc(R.code)}</span></div><div id="team" class="team2">${teamH()}</div><div class="bt-btns"><button class="go swing big" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${cdBar(T.cd,Math.max(0,T.cdu-Date.now()))}<span>${m.dead?'DOWN':T.cd?'...':'SWING'}</span></button><button class="ret" onclick="tleave()">Leave</button></div>${m.dead?'<p class="fine">You are down. A teammate must clear the floor to revive you.</p>':''}</div></div>`}
-function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';document.getElementById('btxt').textContent=`${R.bossHp} / ${R.bossMax}`;document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=Math.max(0,m.hp)/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`${Math.max(0,m.hp)} / ${m.mx||100}`;view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
-function tbtn(){const b=document.querySelector('.bt-scene .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);const sp=b.querySelector('span');if(sp)sp.textContent=dead?'DOWN':T.cd?'...':'SWING';const c=b.querySelector('.cdf');if(c){c.style.display=T.cd?'':'none';if(T.cd){c.style.animation='none';void c.offsetWidth;c.style.animation='';c.style.animationDuration=cdMs()+'ms'}}}
-<div id="team" class="team2">${teamH()}</div><div class="bt-btns"><button class="go swing big" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${cdBar(T.cd,Math.max(0,T.cdu-Date.now()))}<span>${m.dead?'DOWN':T.cd?'...':'SWING'}</span></button><button class="ret" onclick="tleave()">Leave</button></div>${m.dead?'<p class="fine">You are down. A teammate must clear the floor to revive you.</p>':''}</div></div>`}
+
 function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';document.getElementById('btxt').textContent=`${R.bossHp} / ${R.bossMax}`;document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=Math.max(0,m.hp)/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`${Math.max(0,m.hp)} / ${m.mx||100}`;view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
 function tbtn(){const b=document.querySelector('.bt-scene .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);const sp=b.querySelector('span');if(sp)sp.textContent=dead?'DOWN':T.cd?'...':'SWING';const c=b.querySelector('.cdf');if(c){c.style.display=T.cd?'':'none';if(T.cd){c.style.animation='none';void c.offsetWidth;c.style.animation='';c.style.animationDuration=cdMs()+'ms'}}}
 
 // ----- GCash Client Logic -----
-let currentGcashPack = null;
-
-function checkout(packId) {
-  const pack = GEM_PACKS.find(p => p.id === packId);
-  if (!pack) return;
-
-  currentGcashPack = packId;
-  const phpPrice = '₱' + Math.round((pack.cents / 100) * 58); 
-  
-  document.getElementById('gcashPrice').textContent = `${phpPrice} (${pack.gems} Gems)`;
-  document.getElementById('gcashRefInput').value = '';
-  document.getElementById('gcashErr').textContent = '';
-  document.getElementById('gcashModal').style.display = 'grid';
-}
-
-function closeGcashModal() {
-  document.getElementById('gcashModal').style.display = 'none';
-  currentGcashPack = null;
-}
-
-async function submitGcashModal() {
-  const refNo = document.getElementById('gcashRefInput').value.trim();
-  const errEl = document.getElementById('gcashErr');
-  
-  if (!/^\d{8,13}$/.test(refNo)) {
-    errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
-    return;
-  }
-
-  errEl.textContent = 'Submitting…';
-
-  try {
-    const res = await api('/api/shop/gcash-submit', { packId: currentGcashPack, refNo });
-    toast(res.message || 'Payment submitted!');
-    closeGcashModal();
-  } catch (err) {
-    errEl.textContent = err.message || 'Submission failed.';
-  }
-}
-
-async function loadAdminGcash() {
-  try {
-    const data = await api('/api/admin/gcash-requests');
-    const el = document.getElementById('gcashAdminList');
-    if (!el) return;
-
-    if (!data.pending.length) {
-      el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
-      return;
-    }
-
-    el.innerHTML = data.pending.map(item => `
-      <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div>
-          <b>@${esc(item.user)}</b> · Ref: <span style="color:var(--acc);">${esc(item.ref)}</span><br>
-          <small>${item.gems} Gems ($${(item.cents / 100).toFixed(2)})</small>
-        </div>
-        <div class="btnrow">
-          <button class="go sm" onclick="confirmGcash('${item.id}')">Confirm</button>
-          <button class="sm" onclick="rejectGcash('${item.id}')">Reject</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    toast(e.message);
-  }
-}
-
-async function confirmGcash(requestId) {
-  try {
-    const res = await api('/api/admin/gcash-confirm', { requestId });
-    toast(res.message);
-    loadAdminGcash();
-  } catch (e) { toast(e.message); }
-}
-
-async function rejectGcash(requestId) {
-  try {
-    const res = await api('/api/admin/gcash-reject', { requestId });
-    toast(res.message);
-    loadAdminGcash();
-  } catch (e) { toast(e.message); }
-}
-
-S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
-</script>
-
-<!-- JavaScript logic stays inside the <script> tags -->
 let currentGcashPack = null;
 
 function checkout(packId) {
@@ -1283,10 +1034,65 @@ async function submitGcashModal() {
   }
 }
 
+async function loadAdminGcash() {
+  try {
+    const data = await api('/api/admin/gcash-requests');
+    const el = document.getElementById('gcashAdminList');
+    if (!el) return;
+
+    if (!data.pending.length) {
+      el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
+      return;
+    }
+
+    el.innerHTML = data.pending.map(item => `
+      <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div>
+          <b>@${esc(item.user)}</b> · Ref: <span style="color:var(--acc);">${esc(item.ref)}</span><br>
+          <small>${item.gems} Gems ($${(item.cents / 100).toFixed(2)})</small>
+        </div>
+        <div class="btnrow">
+          <button class="go sm" onclick="confirmGcash('${item.id}')">Confirm</button>
+          <button class="sm" onclick="rejectGcash('${item.id}')">Reject</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
+async function confirmGcash(requestId) {
+  try {
+    const res = await api('/api/admin/gcash-confirm', { requestId });
+    toast(res.message);
+    loadAdminGcash();
+  } catch (e) { toast(e.message); }
+}
+
+async function rejectGcash(requestId) {
+  try {
+    const res = await api('/api/admin/gcash-reject', { requestId });
+    toast(res.message);
+    loadAdminGcash();
+  } catch (e) { toast(e.message); }
+}
+
+/* Master Render */
+function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
+const a=document.getElementById('app');st();
+const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
+const h=M();document.getElementById('tbar').innerHTML=head();
+const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
+const top=RL.scr!=S.scr;RL.scr=S.scr;a.innerHTML=h;if(top)a.scrollTop=0;
+if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap();if(S.scr=='friends'&&USER&&USER.caps.social)frStart();if(S.scr=='news')loadTop();if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
+if(S.scr=='admin'&&AD.tab=='gcash')loadAdminGcash();}
+
+const RL={scr:''};
 S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
 </script>
 
-<!-- HTML elements go AFTER </script> and BEFORE </body> -->
+<!-- GCash Modal -->
 <div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
   <div class="dlg" style="text-align:center;">
     <h2 style="color:var(--acc); margin-bottom:4px;">Pay with GCash</h2>
@@ -1314,6 +1120,3 @@ S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'
 
 </body>
 </html>
-
-S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
-</script></body></html>
