@@ -968,7 +968,7 @@ function adoptGem(sv){S.gems=sv.gems;S.gl=sv.gl;S.fxo=sv.fxo;S.rev=sv.rev|0;rend
 async function buyGem(id){try{const j=await api('/api/gems/buy',{kind:'item',id});adoptGem(j.save);sfx.buy();toast('Bought '+P[id].n)}catch(e){toast(e.message);sfx.deny()}}
 async function buyFx(id){try{const j=await api('/api/gems/buy',{kind:'fx',id});adoptGem(j.save);sfx.buy();toast('Effect unlocked')}catch(e){toast(e.message);sfx.deny()}}
 function equipFx(id){S.fx=id;sfx.equip();save();render()}
-async function checkout(pack){try{const j=await api('/api/shop/checkout',{pack});location.href=j.url}catch(e){toast(e.message)}}
+async function checkout(pack){try{const j=await api('/api/shop/creem-checkout',{pack});location.href=j.url}catch(e){toast(e.message)}}
 /* ----- rewards, settings, news, help ----- */
 function overH(){return `<div class="box"><h2>Recoil beat you.</h2><p>You earned ${S.gain} coins${S.gdia?` and ${S.gdia} diamonds`:''} for the damage you dealt. Spend them in the shop, then try again.</p><div class="btnrow"><button onclick="S.scr='shop';render()">Shop</button><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div></div>`}
 function rewardH(){const b=cb(),rep=isRep();return `<div class="box"><h2>${b.n} defeated.</h2><p>+${S.gain} coins${S.gdia?` and +${S.gdia} diamonds`:''}${rep?' (repeat fight: half rewards)':''}. Choose one part.</p><div class="parts">`+S.rew.map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="take(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button onclick="skip()">Skip reward</button></div>`}
