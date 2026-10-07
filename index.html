@@ -30,14 +30,14 @@ p{margin:0 0 8px;color:var(--mut)}
 .tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .tabs button{flex:1;text-align:center;min-width:70px}
 .parts{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-bottom:14px}
-button{font:inherit;color:var(--tx);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-align:left;cursor:pointer;transition:transform .12s,border-color .12s}
+button{font:inherit;color:var(--tx);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-align:left;cursor:pointer;transition:transform .12s,border-color .12s;user-select:none;-webkit-user-select:none}
 button:hover:not(:disabled){transform:translateY(-1px);border-color:var(--mut)}
 button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .part{border-left:5px solid var(--tc)}
 button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 14%,var(--bg2))}
 button small{display:block;color:var(--mut);font-size:.82rem}
 button.go{background:linear-gradient(180deg,var(--acc),var(--acc2));color:var(--ink);font-weight:700;text-align:center;border:0;width:100%;padding:13px;font-size:1.1rem}
-button:disabled{opacity:.5;cursor:default}
+button:disabled{opacity:.5;cursor:default;pointer-events:none}
 .bar{height:16px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin:2px 0 4px}
 .bar i{display:block;height:100%;transition:width .25s}
 .arena{text-align:center;position:relative}
@@ -53,7 +53,7 @@ button:disabled{opacity:.5;cursor:default}
 .who{padding:5px 6px 5px 14px}.who button{padding:4px 12px;border-radius:999px;font-size:.85rem}
 .ib{display:grid;place-items:center;width:36px;height:36px;padding:0!important;background:linear-gradient(180deg,var(--acc),var(--acc2))!important;color:var(--ink)!important;border:0!important}
 .av{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:linear-gradient(180deg,var(--acc),var(--acc2));color:var(--ink);font-weight:700}
-.ov{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:16px;z-index:9}
+.ov{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:16px;z-index:99}
 .dlg{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;width:100%;max-width:360px}
 .dlg label{display:block;color:var(--mut);font-size:.9rem;margin-bottom:10px}
 .dlg input{display:block;width:100%;margin-top:3px;padding:10px;font:inherit;color:var(--tx);background:var(--bg2);border:1px solid var(--line);border-radius:8px}
@@ -296,6 +296,10 @@ button.sm{padding:6px 12px;width:auto!important;font-size:.85rem;flex:none}
 .team2{display:flex;gap:6px}.tc{flex:1;min-width:0;border:3px solid var(--px);background:var(--panel);padding:3px 5px;font-size:.72rem;text-align:center}
 .tc b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc.me{border-color:var(--acc)}.tc.dn{opacity:.5}.tc small{color:var(--mut)}
 @media(prefers-reduced-motion:reduce){.cdf{animation:none!important;width:100%}}
+
+/* Pointer Event Fixes to prevent button press blocks */
+.nb *, .logo *, .hb * { pointer-events: none !important; }
+#modal:empty { display: none !important; pointer-events: none !important; }
 </style></head><body><div id="shell"><div id="tbar"></div><main id="app"></main><nav id="nav"></nav></div><div id="modal"></div><div id="ver"></div>
 <script>
 (function(root){
@@ -987,13 +991,13 @@ function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl
 function teamH(){return view().map(p=>`<div class="tc ${p.dead||p.off?'dn':''} ${p.u===USER.u?'me':''}"><b>${esc(p.nm)}</b><div class="bt-hp sm"><i style="width:${Math.max(0,p.hp)/(p.mx||100)*100}%"></i></div><small>${p.off?'offline':p.dead?'down':p.hp+' HP'} · ${p.dealt}</small></div>`).join('')}
 function towerH(){const s=st(),b=R.boss,L=T.last,fx=T.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),m=me(),rec=Game.recoil(b.r,s.def),pct=R.bossHp/R.bossMax*100,ph=Math.max(0,m.hp)/(m.mx||100)*100;
 return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class="bt-name"><b>Floor ${R.floor}: ${esc(b.n)}</b>${b.sp?'<small>SPECIAL</small>':''}<span class="wk" style="--ec:${elc(b.w)}">weak: ${b.w}</span></div><div class="bt-hp"><i id="bfill" style="width:${pct}%"></i><span id="btxt">${R.bossHp} / ${R.bossMax}</span></div></div>
-<div class="bt-stage tw" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:\${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div>
+<div class="bt-stage tw" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div>
 <div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="myhp" style="width:${ph}%"></i><span id="myhpt">${Math.max(0,m.hp)} / ${m.mx||100}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span>Room ${esc(R.code)}</span></div><div id="team" class="team2">${teamH()}</div><div class="bt-btns"><button class="go swing big" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${cdBar(T.cd,Math.max(0,T.cdu-Date.now()))}<span>${m.dead?'DOWN':T.cd?'...':'SWING'}</span></button><button class="ret" onclick="tleave()">Leave</button></div>${m.dead?'<p class="fine">You are down. A teammate must clear the floor to revive you.</p>':''}</div></div>`}
 
 function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';document.getElementById('btxt').textContent=`${R.bossHp} / ${R.bossMax}`;document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=Math.max(0,m.hp)/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`${Math.max(0,m.hp)} / ${m.mx||100}`;view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
 function tbtn(){const b=document.querySelector('.bt-scene .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);const sp=b.querySelector('span');if(sp)sp.textContent=dead?'DOWN':T.cd?'...':'SWING';const c=b.querySelector('.cdf');if(c){c.style.display=T.cd?'':'none';if(T.cd){c.style.animation='none';void c.offsetWidth;c.style.animation='';c.style.animationDuration=cdMs()+'ms'}}}
 
-// ----- GCash Client Logic -----
+// GCash Client Logic
 let currentGcashPack = null;
 
 function checkout(packId) {
