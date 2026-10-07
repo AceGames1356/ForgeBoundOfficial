@@ -109,16 +109,14 @@ const VERSION='2.0.0';
 const BOSSES=[
 {n:'Slime King',k:'#4fd06a',hp:70,r:4,w:'fire'},{n:'Frost Warden',k:'#7fd6ff',hp:130,r:7,w:'shock'},
 {n:'Hollow Knight',k:'#9aa3b5',hp:210,r:10,w:'blood'},{n:'Storm Wyrm',k:'#ffe14d',hp:300,r:13,w:'ice'},{n:'Anvil God',k:'#ff6b3d',hp:420,r:16,w:'void'},
-{n:'Venom Hydra',k:'#4fb04a',hp:560,r:19,w:'toxic'},{n:'Crimson Warlord',k:'#e0455a',hp:760,r:23,w:'blood'},
-{n:'Abyss Leviathan',k:'#2d6fa8',hp:1000,r:28,w:'shock'},{n:'Solar Titan',k:'#e8b73a',hp:1350,r:34,w:'ice'},
+{n:'Venom Hydra',k:'#4fb04a',hp:560,r:19,w:'toxic'},{n:'Crimson Warlord',k:'#e0455a',hp:760,r:23,w:'blood'},{n:'Abyss Leviathan',k:'#2d6fa8',hp:1000,r:28,w:'shock'},{n:'Solar Titan',k:'#e8b73a',hp:1350,r:34,w:'ice'},
 {n:'Void Emperor',k:'#7a4be0',hp:1800,r:39,w:'fire'},{n:'Seraph Sentinel',k:'#f4eec8',hp:2500,r:43,w:'void'},{n:'The Final God',k:'#fff3b0',hp:3500,r:49,w:'toxic'}];
 
 const WORLD2=[
 {n:'Sand Golem',k:'#d9b36a',w:'ice'},{n:'Dune Stalker',k:'#c9a23a',w:'shock'},{n:'Scarab Matriarch',k:'#4fb04a',w:'fire'},{n:'Mirage Wraith',k:'#b99cff',w:'void'},{n:'Cactus King',k:'#4d8a4a',w:'fire'},
 {n:'Thornback Boar',k:'#8a5a2b',w:'fire'},{n:'Elder Treant',k:'#3f7a3a',w:'fire'},{n:'Moss Hydra',k:'#6fbf5a',w:'shock'},{n:'Fae Queen',k:'#ff7ac8',w:'blood'},
 {n:'Frost Yeti',k:'#cfe6ff',w:'fire'},{n:'Ice Drake',k:'#7fd6ff',w:'shock'},{n:'Blizzard Witch',k:'#8fa8ff',w:'blood'},{n:'Glacier Titan',k:'#9fd8ff',w:'toxic'},
-{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},
-{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},{n:'ViLocity',k:'#fff3b0',w:'holy'}];
+{n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},{n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},{n:'ViLocity',k:'#fff3b0',w:'holy'}];
 const R2=[20, 18, 19, 17, 18, 20, 20, 20, 19, 20, 20, 20, 20, 20, 20, 27, 28, 25, 26, 30, 20],AGPW=28;
 const W2HP=[60, 70, 85, 100, 120, 150, 190, 240, 300, 380, 470, 580, 720, 880, 1080, 1330, 1650, 2050, 2500, 3000, 6500],W2R=[7, 17, 21, 28, 29, 27, 36, 31, 30, 32, 39, 41, 36, 37, 47, 42, 43, 39, 50, 47, 34];
 WORLD2.forEach((b,i)=>{b.hp=W2HP[i];b.r=W2R[i];b.fl=.1;b.coin=i==20?2500:120+45*i;b.dia=i==20?200:4+2*i});
@@ -165,6 +163,7 @@ const ADMIN = String(process.env.ADMIN_USER || 'vilocity').toLowerCase();
 const CFG = {
   PUBLIC_URL: (process.env.PUBLIC_URL || '').replace(/\/$/, ''),
   STRIPE_KEY: process.env.STRIPE_SECRET_KEY || '', STRIPE_WH: process.env.STRIPE_WEBHOOK_SECRET || '',
+  CREEM_KEY: process.env.CREEM_API_KEY || '', CREEM_WH: process.env.CREEM_WEBHOOK_SECRET || '',
   RESEND: process.env.RESEND_API_KEY || '', FROM: process.env.EMAIL_FROM || 'Forgebound <onboarding@resend.dev>',
   DEV_CODE: process.env.DEV_SHOW_CODE === '1'
 };
@@ -380,7 +379,7 @@ function roomOf(user, res) {
 }
 setInterval(() => { for (const r of rooms.values()) if (Date.now() - r.ts > 3600000) r.players.slice().forEach(p => removePlayer(r, p.u)); }, 60000);
 
-// ---------- stripe ----------
+// ---------- payments (stripe + creem) ----------
 function verifyStripe(raw, header, secret) {
   if (!header || !secret) return false;
   const parts = header.split(','), t = (parts.find(x => x.startsWith('t=')) || '').slice(2);
@@ -388,11 +387,16 @@ function verifyStripe(raw, header, secret) {
   const ok = parts.filter(x => x.startsWith('v1=')).some(x => { const v = x.slice(3); return v.length === sig.length && crypto.timingSafeEqual(Buffer.from(v), Buffer.from(sig)); });
   return ok && Math.abs(Date.now() / 1000 - Number(t)) < 600;
 }
-function creditPayment(session) {
-  if (!session || DB.paid[session.id] || session.payment_status !== 'paid') return false;
-  const md = session.metadata || {}, rec = DB.users[md.user], pack = G.GEM_PACKS.find(x => x.id === md.pack);
-  if (!rec || !pack || session.amount_total !== pack.cents) { console.error('payment mismatch', session.id); return false; }
-  DB.paid[session.id] = { u: md.user, gems: pack.gems, t: Date.now() }; rec.save.gems += pack.gems; persist(); return true;
+function verifyCreem(raw, header, secret) {
+  if (!header || !secret) return false;
+  const sig = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+  return header.length === sig.length && crypto.timingSafeEqual(Buffer.from(header), Buffer.from(sig));
+}
+function creditPayment(sessionId, username, packId, amountCents) {
+  if (!sessionId || DB.paid[sessionId]) return false;
+  const rec = DB.users[username], pack = G.GEM_PACKS.find(x => x.id === packId);
+  if (!rec || !pack || amountCents !== pack.cents) { console.error('payment mismatch', sessionId); return false; }
+  DB.paid[sessionId] = { u: username, gems: pack.gems, t: Date.now() }; rec.save.gems += pack.gems; persist(); return true;
 }
 
 // ---------- API ----------
@@ -404,9 +408,25 @@ async function handleApi(req, res, url) {
     const raw = await readBody(req, 200000);
     if (!verifyStripe(raw, req.headers['stripe-signature'], CFG.STRIPE_WH)) return fail(res, 400, 'Bad signature.');
     let ev; try { ev = JSON.parse(raw); } catch (e) { return fail(res, 400, 'Bad payload.'); }
-    if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') creditPayment(ev.data && ev.data.object);
+    if (ev.type === 'checkout.session.completed' || ev.type === 'checkout.session.async_payment_succeeded') {
+      const sess = ev.data && ev.data.object;
+      const md = sess ? sess.metadata || {} : {};
+      creditPayment(sess.id, md.user, md.pack, sess.amount_total);
+    }
     return json(res, 200, { received: true });
   }
+  if (route === '/api/creem/webhook') {
+    const raw = await readBody(req, 200000);
+    if (!verifyCreem(raw, req.headers['x-creem-signature'], CFG.CREEM_WH)) return fail(res, 400, 'Bad signature.');
+    let ev; try { ev = JSON.parse(raw); } catch (e) { return fail(res, 400, 'Bad payload.'); }
+    if (ev.type === 'checkout.completed' || ev.type === 'payment.succeeded') {
+      const obj = ev.data || {};
+      const md = obj.metadata || {};
+      creditPayment(obj.id || ev.id, md.user, md.pack, obj.amount_cents || obj.amount);
+    }
+    return json(res, 200, { received: true });
+  }
+
   if (route === '/api/news') return json(res, 200, { news: DB.news.slice(-20).reverse(), patch: G.PATCH_NOTES, version: G.VERSION });
   if (route === '/api/top') {
     const top = Object.entries(DB.users).map(([u, r]) => ({ name: r.name, tb: r.save.tb || 0 })).filter(x => x.tb > 0).sort((a, b) => b.tb - a.tb).slice(0, 10);
@@ -483,10 +503,10 @@ async function handleApi(req, res, url) {
   }
 
   // ----- gems shop -----
-  if (route === '/api/shop') return json(res, 200, { packs: G.GEM_PACKS, payments: !!(CFG.STRIPE_KEY && CFG.STRIPE_WH && CFG.PUBLIC_URL), canBuy: cp.buy });
+  if (route === '/api/shop') return json(res, 200, { packs: G.GEM_PACKS, payments: !!((CFG.STRIPE_KEY && CFG.STRIPE_WH) || (CFG.CREEM_KEY && CFG.CREEM_WH)) && !!CFG.PUBLIC_URL, canBuy: cp.buy });
   if (route === '/api/shop/checkout') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
-    if (!(CFG.STRIPE_KEY && CFG.STRIPE_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Payments are not set up on this server yet.');
+    if (!(CFG.STRIPE_KEY && CFG.STRIPE_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Stripe payments are not set up on this server.');
     const b = await body(req), pack = G.GEM_PACKS.find(x => x.id === b.pack); if (!pack) return fail(res, 400, 'Unknown pack.');
     const f = new URLSearchParams({ mode: 'payment', success_url: CFG.PUBLIC_URL + '/?paid=1', cancel_url: CFG.PUBLIC_URL + '/?paid=0', client_reference_id: me, 'metadata[user]': me, 'metadata[pack]': pack.id,
       'line_items[0][quantity]': '1', 'line_items[0][price_data][currency]': 'usd', 'line_items[0][price_data][unit_amount]': String(pack.cents), 'line_items[0][price_data][product_data][name]': pack.gems + ' Forgebound Gems' });
@@ -494,6 +514,29 @@ async function handleApi(req, res, url) {
       const r = await fetch('https://api.stripe.com/v1/checkout/sessions', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.STRIPE_KEY, 'Content-Type': 'application/x-www-form-urlencoded' }, body: f });
       const j = await r.json(); if (!r.ok || !j.url) return fail(res, 502, 'Could not start checkout.'); return json(res, 200, { url: j.url });
     } catch (e) { return fail(res, 502, 'Could not reach the payment provider.'); }
+  }
+  if (route === '/api/shop/creem-checkout') {
+    if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
+    if (!(CFG.CREEM_KEY && CFG.CREEM_WH && CFG.PUBLIC_URL)) return fail(res, 503, 'Creem payments are not set up on this server.');
+    const b = await body(req), pack = G.GEM_PACKS.find(x => x.id === b.pack); if (!pack) return fail(res, 400, 'Unknown pack.');
+    try {
+      const r = await fetch('https://api.creem.io/v1/checkouts', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + CFG.CREEM_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount_cents: pack.cents,
+          currency: 'USD',
+          product_name: pack.gems + ' Forgebound Gems',
+          success_url: CFG.PUBLIC_URL + '/?paid=1',
+          cancel_url: CFG.PUBLIC_URL + '/?paid=0',
+          metadata: { user: me, pack: pack.id }
+        })
+      });
+      const j = await r.json();
+      const checkoutUrl = j.checkout_url || j.url;
+      if (!r.ok || !checkoutUrl) return fail(res, 502, 'Could not start Creem checkout.');
+      return json(res, 200, { url: checkoutUrl });
+    } catch (e) { return fail(res, 502, 'Could not reach Creem payment server.'); }
   }
   if (route === '/api/gems/buy') {
     if (!cp.buy) return fail(res, 403, 'Buying needs a verified email and age 13 or older.');
