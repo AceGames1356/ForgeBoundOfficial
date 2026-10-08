@@ -1068,9 +1068,9 @@ async function loadAdminGcash(){
   el.innerHTML='<p class="fine">Loading pending GCash payments…</p>';
   let res=null,err=null;
   const urls=['/api/admin/gcash-pending'];
-  if(AD.who)urls.push('/api/admin/gcash-pending?who='+encodeURIComponent(AD.who));
+  if(AD.who)['username','who','u','user'].forEach(k=>urls.push('/api/admin/gcash-pending?'+k+'='+encodeURIComponent(AD.who)));
   for(const u of urls){
-    try{res=await api(u);err=null;break}catch(e){err=e}
+    try{res=await api(u);err=null;break}catch(e){err=err&&/no such player/i.test(e.message)?err:e}
   }
   if(seq!==GC_SEQ||!document.getElementById('gcashAdminList'))return;
   const box=document.getElementById('gcashAdminList');
