@@ -80,7 +80,7 @@ button.go:hover:not(:disabled){background:var(--acc2)}
 .bar{height:22px;background:var(--px);padding:0}
 .bar i{transition:width .3s steps(6);background-image:repeating-linear-gradient(90deg,transparent 0 6px,#0006 6px 8px)}
 .stage{height:300px;border-width:4px!important;background-color:var(--bg2);background-image:linear-gradient(var(--px) 50%,transparent 50%);background-size:100% 8px;background-blend-mode:soft-light}
-.stage::before{content:'';position:absolute;width:90px;height:90px;background:color-mix(in srgb,var(--glow) 35%,transparent);box-shadow:0 0 0 18px color-mix(in srgb,var(--glow) 22%,transparent),0 0 0 36px color-mix(in srgb,var(--glow) 12%,transparent);transform:rotate(45deg)}
+.stage::before{content:'';position:absolute;width:90px;height:90px;background:color-mix(in srgb,var(--glow) 35%,transparent);box-shadow:0 0 0 18px color-mix(in srgb,var(--glow) 20%,transparent),0 0 0 36px color-mix(in srgb,var(--glow) 12%,transparent);transform:rotate(45deg)}
 .stage svg{filter:none;position:relative;animation:fl 1.6s steps(2) infinite}
 @keyframes fl{50%{transform:translateY(-4px)}}
 .boss{background:none;position:relative}
@@ -297,7 +297,6 @@ button.sm{padding:6px 12px;width:auto!important;font-size:.85rem;flex:none}
 .tc b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc.me{border-color:var(--acc)}.tc.dn{opacity:.5}.tc small{color:var(--mut)}
 @media(prefers-reduced-motion:reduce){.cdf{animation:none!important;width:100%}}
 </style></head><body><div id="shell"><div id="tbar"></div><main id="app"></main><nav id="nav"></nav></div><div id="modal"></div><div id="ver"></div>
-
 <script>
 (function(root){
 const P=[
@@ -416,7 +415,7 @@ const WORLD2=[
 {n:'Magma Serpent',k:'#ff6b1a',w:'ice'},{n:'Ash Colossus',k:'#6b6b78',w:'ice'},{n:'Cinder Lord',k:'#e0455a',w:'toxic'},{n:'Obsidian Dragon',k:'#3a3160',w:'ice'},
 {n:'Void Walker',k:'#7a4be0',w:'blood'},{n:'Rift Devourer',k:'#5f6bff',w:'shock'},{n:'Dark Sovereign',k:'#3b2a6b',w:'toxic'},
 {n:'ViLocity',k:'#fff3b0',w:'holy'}];
-const AGPW=28;
+const R2=[20, 18, 19, 17, 18, 20, 20, 20, 19, 20, 20, 20, 20, 20, 20, 27, 28, 25, 26, 30, 20],AGPW=28;
 const W2HP=[60, 70, 85, 100, 120, 150, 190, 240, 300, 380, 470, 580, 720, 880, 1080, 1330, 1650, 2050, 2500, 3000, 6500],W2R=[7, 17, 21, 28, 29, 27, 36, 31, 30, 32, 39, 41, 36, 37, 47, 42, 43, 39, 50, 47, 34];
 WORLD2.forEach((b,i)=>{b.hp=W2HP[i];b.r=W2R[i];b.fl=.1;b.coin=i==20?2500:120+45*i;b.dia=i==20?200:4+2*i});
 WORLD2[20].aggr={pw:AGPW,every:3200,tele:1000};
@@ -471,12 +470,11 @@ function closeM(){document.getElementById('modal').innerHTML=''}
 function setMode(m){MODE=m;drawM()}
 
 function st(){let o={atk:0,spd:1,def:0,crit:0,life:0,e:'none'};
-for(const k in S.eq){const p=P[S.eq[k]];if(!p)continue;o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
+for(const k in S.eq){const p=P[S.eq[k]];o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
 o.spd=Math.max(.3,o.spd);return o}
-
 const W=(n,m,t)=>Array.from({length:n},(_,i)=>i<t?Math.max(1,Math.ceil(m*(i+1)/t)):m);
 const BW={'Rust Blade':W(24,3,4),'Steel Edge':W(28,3,5),'Rapier':W(32,1,3),'Cleaver':W(22,5,2),'Reaper Scythe':[5,5,4,4,4,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],'Glass Fang':[1,1,2,2,3,3,3,3,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1,1],'Greatblade':W(34,6,5)};
-function svg(E,vb,ww,hh){E=E||S.eq;const h=P[E.h],b=P[E.b],g=P[E.g],c=P[E.c],cx=16,D='#12101c',w=b.sh?W(...b.sh):BW[b.n]||BW['Rust Blade'],y0=38-w.length;let o='';
+function svg(E,vb,ww,hh){E=E||S.eq;const h=P[E.h],b=P[E.b],g=P[E.g],c=P[E.c],cx=16,D='#12101c',w=b.sh?W(...b.sh):BW[b.n],y0=38-w.length;let o='';
 const R=(x,y,ww,hh,f)=>{o+=`<rect x="${x}" y="${y}" width="${ww}" height="${hh}" fill="${f}"/>`};
 R(cx-w[0],y0-1,w[0]*2,1,D);w.forEach((k,i)=>R(cx-k-1,y0+i,2*k+2,1,D));
 w.forEach((k,i)=>{R(cx-k,y0+i,2*k,1,b.c);R(cx-1,y0+i,1,1,'#ffffff66');R(cx+k-1,y0+i,1,1,'#00000040')});
@@ -488,7 +486,6 @@ R(cx-3,59,6,5,D);R(cx-2,60,4,3,g.c);
 R(cx-3,37,6,4,D);R(cx-2,38,4,2,EC[c.e]);R(cx-2,38,1,1,'#fff');
 return `<svg viewBox="${vb||'0 0 32 66'}" width="${ww||128}" height="${hh||264}" shape-rendering="crispEdges" role="img" aria-label="Your weapon">${o}</svg>`}
 const VB={b:[[4,0,24,44],1],h:[[8,34,16,32],1],g:[[4,30,24,16],1],c:[[8,30,16,14],1]};
-
 const BP={o:'#12101c',w:'#fff',y:'#ffd84d',r:'#a02030'};
 const BS=[
 {a:'#4fd06a',b:'#2f9a49',c:'#a6f2b6',e:'#12101c',r:["........","...y.y.y","...yyyyy","...ooooo","..ooaaaa",".oaaaacc",".oaacaaa",".oaaweaa",".oaaweaa",".oaaaaaa",".oabaooo",".oabbbbb",".oabbbbb","..oobbbb","...ooooo","........"]},
@@ -527,7 +524,6 @@ const W2SP=[[0,4,{a:'#d9b36a',b:'#9a7a3a',c:'#f0dca0',e:'#5e3b1b'}],[2,3,{a:'#c9
 [0,7,{a:'#ff6b1a',b:'#a02a0a',c:'#ffb27a',e:'#ffe14d'}],[0,4,{a:'#6b6b78',b:'#3a3a48',c:'#a0a0b0',e:'#ff6b1a'}],[0,6,{a:'#e0455a',b:'#7a1a2a',c:'#ff9aa8',e:'#ffe14d',y:'#ff9d2b'}],[2,2,{a:'#3a3160',b:'#1a1430',c:'#7a6ac0',e:'#ff3b6b',f:'#a66bff'}],
 [0,9,{a:'#7a4be0',b:'#3a1a90',c:'#c8a8ff',e:'#00ffcc',y:'#d9b24a'}],[0,3,{a:'#5f6bff',b:'#2a2f9a',c:'#a8b0ff',e:'#ffffff',y:'#ffe14d'}],[0,11,{a:'#3b2a6b',b:'#1f1540',c:'#a66bff',e:'#ff2a2a',f:'#7a4be0',y:'#d9b24a'}],[-1,0,{}]];
 const w2g=i=>{const s=W2SP[i];return s[0]<0?VGRID:Object.assign({},GR(s[0],s[1]),s[2])};
-
 function desc(p){const a=[];if(p.atk)a.push('ATK '+(p.atk>0?'+':'')+p.atk);if(p.spd)a.push('SPD '+(p.spd>0?'+':'')+p.spd);if(p.def)a.push('DEF '+(p.def>0?'+':'')+p.def);if(p.crit)a.push('Crit '+Math.round(p.crit*100)+'%');if(p.life)a.push('Lifesteal '+Math.round(p.life*100)+'%');if(p.e&&p.e!='none')a.push(p.e);return RN[p.t]+(p.wd?' (W2)':p.an?' (Anniversary)':'')+'. '+(a.join(', ')||'No bonus')}
 
 function atk(){if(S.cd||S.over)return;const s=st(),b=cb();let d=s.atk*(.85+Math.random()*.3),t=[];
@@ -538,7 +534,6 @@ S.log.unshift(`You hit for ${d}${t.length?' ('+t.join(', ')+')':''}. Recoil: you
 sfx.swing();S.cd=true;S.fx=1;render();S.fx=0;if(d>0)(t.length?sfx.crit:sfx.hit)();setTimeout(sfx.hurt,120);
 if(S.bhp<=0){S.over=1;stopAg();setTimeout(win,900);return}if(S.hp<=0){loseFight(b);return}
 setTimeout(()=>{S.cd=false;if(S.scr=='fight')render()},Math.max(650,1000/s.spd))}
-
 function loseFight(b){if(S.over)return;S.over=1;stopAg();S.cd=true;setTimeout(()=>{const f=1-S.bhp/b.hp;S.gain=Math.round(bcoin(b)*.4*f);S.coins+=S.gain;S.gdia=b.w2?Math.round(b.dia*.3*f):0;S.dia+=S.gdia;save();S.scr='over';sfx.lose();render()},900)}
 function stopAg(){if(S.agT)clearTimeout(S.agT);S.agT=0;S.ag=null}
 function startAg(b){S.ag={tele:0,guard:0,gcd:0};const loop=()=>{if(S.scr!='fight'||!S.ag||S.over)return;const ev=(S.bhp<b.hp/2?.75:1)*b.aggr.every;
@@ -550,9 +545,11 @@ function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.no
 
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
 function skip(){advance()}
-function reset(){if(!S.rs){S.rs=true;render();return}doReset()}
+
+function bar(v,m,c){return `<div class="bar"><i style="width:${Math.max(0,v/m*100)}%;background:${c}"></i></div>`}
 
 let CF={snd:1,vol:'med',anim:1,theme:'auto',pal:'aurora'};try{Object.assign(CF,JSON.parse(localStorage.getItem('fb:set')||'{}'))}catch(e){}
+
 function setOpt(k,v){CF[k]=v;try{localStorage.setItem('fb:set',JSON.stringify(CF))}catch(e){}applySet();if(k=='snd'&&v)sfx.buy();if(k=='vol')sfx.coin();render()}
 let AC=null;const VOL={low:.5,med:1,high:1.8};
 function ac(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=='suspended')AC.resume();return AC}
@@ -565,7 +562,7 @@ swing:()=>noise(.14,500,2400,.09),hit:()=>{beep(150,.14,'sine',.12,55);noise(.08
 hurt:()=>{beep(110,.2,'sawtooth',.05,60);noise(.1,400,150,.05)},heal:()=>beep(440,.2,'sine',.06,880),
 coin:()=>{beep(988,.06,'square',.04);beep(1319,.16,'square',.04,0,.06)},buy:()=>{beep(660,.08,'square',.04);beep(990,.12,'square',.04,0,.07);beep(1320,.16,'square',.03,0,.14)},
 deny:()=>{beep(160,.16,'sawtooth',.05);beep(120,.2,'sawtooth',.05,0,.12)},win:()=>{arp([392,523,659,784,1047],.2,'square',.05,.11);setTimeout(sfx.coin,650)},
-lose:()=>{arp([392,330,262,196],.25,'sawtooth',.04,.16)},join:()=>{beep(600,.07,'square',.04);beep(900,.1,.square',.04,0,.07)},
+lose:()=>{arp([392,330,262,196],.25,'sawtooth',.04,.16)},join:()=>{beep(600,.07,'square',.04);beep(900,.1,'square',.04,0,.07)},
 start:()=>{beep(220,.35,'sawtooth',.05,440);beep(330,.35,'square',.03,660)},clear:()=>{arp([523,659,784,1047],.16,'square',.05,.08);setTimeout(sfx.coin,400)},
 pick:t=>{if(t>=6)arp([784,1047,1319,1568,2093],.4,'sine',.06,.06);else if(t>=5){beep(80,.5,'sawtooth',.08,50);arp([392,494,587],.3,'square',.04,.09)}else if(t>=3)arp([523,659,784],.16,'square',.04,.07);else sfx.buy()},
 reveal:t=>{if(t>=6){arp([1047,1319,1568,2093,2637],.5,'sine',.05,.08)}else if(t>=5){beep(70,.6,'sawtooth',.09,45);noise(.5,200,80,.07)}else if(t>=3)arp([659,784,988],.14,'square',.035,.07);else beep(660,.08,'square',.03)},
@@ -575,7 +572,7 @@ rumble:()=>{noise(2.5,120,40,.14);beep(55,2.5,'sawtooth',.06,30)},cutline:()=>be
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button');if(b&&!b.disabled&&!b.classList.contains('swing'))sfx.click()});
 
 const SHAPES={Dagger:[18,2,3],Sword:[30,3,5],Rapier:[32,1,3],Cleaver:[22,5,2],Greatsword:[36,6,5]};
-let AD={users:[],who:'',msg:'',tab:'give',fs:'b',wf:'all',cust:{s:'b',n:'',t:5,atk:20,spd:0,def:0,crit:0,life:0,e:'fire',c:'#ff3b3b',w:24,dc:'',shape:'Sword',world:1},amt:100};
+let AD={users:[],who:'',msg:'',tab:'give',fs:'b',wf:'all',cust:{s:'b',n:'',t:5,atk:20,spd:0,def:0,crit:0,life:0,e:'fire',c:'#ff3b3b',w:24,dc:'',shape:'Sword'},amt:100};
 async function openAdmin(){S.scr='admin';AD.msg='';render();try{const j=await api('/api/admin/users');AD.users=j.users;if(!AD.who&&AD.users.length)AD.who=AD.users[0].u}catch(e){AD.msg=e.message}render()}
 async function refreshMe(){try{const j=await api('/api/me');(j.customs||[]).forEach(Game.addCustom);applySave(j.save)}catch(e){}}
 async function adm(path,body,ok){try{const j=await api(path,body);AD.msg=ok(j);sfx.admin();if(j.part)Game.addCustom(j.part);if(AD.who===USER.u)await refreshMe()}catch(e){AD.msg='Error: '+e.message;sfx.deny()}render()}
@@ -627,11 +624,10 @@ const inner=`<div class="mapin" style="width:${Z*100}%"><img class="mapimg" src=
 const nm=n.t=='M'?'Minigame '+(n.mi+1):(wv==1?B[n.bi]:WORLD2[n.bi]).n;
 return `<button class="nd ${s} ${isSel?'sel':''}" style="left:${n.x/96*100}%;top:${n.y/60*100}%" aria-label="${nm}, ${s=='done'?'defeated':s=='cur'?'next':'locked'}" onclick="msel(${wv},'${n.t}',${n.t=='B'?n.bi:n.mi})">${n.t=='M'?GAMEI:(wv==1?spr(n.bi,26):sprG(w2g(n.bi),26,nm))}</button>`}).join('')+`</div>`;
 let det='<p>Tap a boss on the map to see its details.</p>';
-if(sel){if(sel.t=='M'){const id=['maze','dodge','hunt'][sel.i],m=MGI[id];det=`<h2>${m.n}</h2><p>${m.d}</p><p>${mgOK(id)?'Unlocked.':'Unlocks after you defeat '+MG_UNLOCK[sel.i]+' bosses in World 2.'}</p>${mgOK(id)?`<button class="go" onclick="mgOpen('${id}')">Play</button>`:''}`[cite: 2]}
+if(sel){if(sel.t=='M'){const id=['maze','dodge','hunt'][sel.i],m=MGI[id];det=`<h2>${m.n}</h2><p>${m.d}</p><p>${mgOK(id)?'Unlocked.':'Unlocks after you defeat '+MG_UNLOCK[sel.i]+' bosses in World 2.'}</p>${mgOK(id)?`<button class="go" onclick="mgOpen('${id}')">Play</button>`:''}`}
 else{const b=wv==1?B[sel.i]:WORLD2[sel.i],w2=wv==2,state=wv==1?(S.world==2||sel.i<S.boss?'Defeated':sel.i==S.boss?'Next boss':'Not reached yet'):(!S.cl1?'Not reached yet':sel.i<S.b2?'Defeated':sel.i==S.b2?'Next boss':'Not reached yet');
 det=`<div class="row"><div>${w2?sprG(w2g(sel.i),72,b.n):spr(sel.i,72)}</div><div><h2>${b.n}</h2><p>${state}</p></div></div><p>${b.hp} HP. Recoil ${b.r} per swing. Weak to ${b.w}.${b.aggr?' He fights back with timed attacks: use Guard.':''}</p><p>Reward: ${w2?b.coin+' coins, '+b.dia+' diamonds':BOSS_COIN[sel.i]+' coins'} and a part.</p>${fightBtn(wv,sel.i)}`}}
-return `<div class="box">2</h2>${two?`<div class="tabs"><button class="${wv==1?'on':''}" onclick="mworld(1)">World 1</button><button class="${wv==2?'on':''}" onclick="mworld(2)">World 2</button></div>`:'<p>Something lies beyond the sea. Defeat The Final God to find out.</p>'}<div class="mapbox" id="mapbox" data-fx="${foc.x/96*100}" data-fy="${foc.y/60*100}">${inner}</div><button style="width:100%;margin-top:8px;text-align:center" onclick="S.mz=${Z==3?1:3};render()">${Z==3?'Zoom out (see the whole map)':'Zoom in (easier to tap)'}</button><div class="box" style="margin-top:10px">${det}</div><button style="width:100%;margin-top:10px;text-align:center" onclick="S.scr='${S.cl1&&S.world==2?'forge':'forge'}';render()">Back to forge</button></div>`}
-
+return `<div class="box"><h2>Boss map</h2>${two?`<div class="tabs"><button class="${wv==1?'on':''}" onclick="mworld(1)">World 1</button><button class="${wv==2?'on':''}" onclick="mworld(2)">World 2</button></div>`:'<p>Something lies beyond the sea. Defeat The Final God to find out.</p>'}<div class="mapbox" id="mapbox" data-fx="${foc.x/96*100}" data-fy="${foc.y/60*100}">${inner}</div><button style="width:100%;margin-top:8px;text-align:center" onclick="S.mz=${Z==3?1:3};render()">${Z==3?'Zoom out (see the whole map)':'Zoom in (easier to tap)'}</button><div class="box" style="margin-top:10px">${det}</div><button style="width:100%;margin-top:10px;text-align:center" onclick="S.scr='${S.cl1&&S.world==2?'forge':'forge'}';render()">Back to forge</button></div>`}
 /* cutscene */
 let CUTT=[];
 function cutH(){return `<div class="cut"><div class="cutm"><div class="zoomer" id="zm" style="transform:scale(5)"><img class="mapimg" src="${genMap()}" alt="The world map"></div></div><div class="cutc" id="cutc" role="status"></div><div class="cutb"><button onclick="cutDone()">Skip</button><button class="go" id="cutgo" style="display:none;width:auto;padding:12px 24px" onclick="cutDone()">Enter World 2</button></div></div>`}
@@ -643,7 +639,6 @@ function cutDone(){CUTT.forEach(clearTimeout);CUTT=[];S.scr='forge';render()}
 function end2H(){return `<div class="box" style="max-width:560px;margin:0 auto"><h2>ViLocity is defeated!</h2><p>The Shattered Lands are free. You conquered both worlds (clears: ${S.clears}).</p><div class="hero">${bspr({w2:1,i:20,n:'ViLocity'},96)}</div><p>Keep playing: minigames still earn diamonds and the shops are open. Or press New run in the forge to start over.</p><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 
 function showGift(g){GIFT=null;sfx.gift();const ps=(g.parts||[]).map(id=>P[id]).filter(Boolean);document.getElementById('modal').innerHTML=`<div class="ov"><div class="dlg" role="dialog" aria-modal="true" aria-label="Anniversary gift"><h2>Happy Anniversary!</h2><p>Thanks for playing Forgebound. Your gift: <b>${g.coins}</b> coins and <b>${g.dia}</b> diamonds, plus these parts that stay with you forever, even after New run.</p><div class="parts" style="grid-template-columns:1fr">${ps.map(p=>`<div class="part" style="--tc:${TC[p.t]}">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></div>`).join('')}</div><button class="go" onclick="closeM()">Awesome</button></div></div>`}
-
 /* top-down minigames */
 const TL=24,GW=15,GH=13;
 const MGI={maze:{n:'Gem Maze',d:'Collect all 8 gems in the maze before time runs out. Slimes cost you 5 seconds.',unlock:0},dodge:{n:'Ember Dodge',d:'Survive 30 seconds of fireballs and grab the diamonds.',unlock:1},hunt:{n:'Slime Hunt',d:'Slash 15 slimes in 45 seconds. Press A to swing.',unlock:2}};
@@ -707,35 +702,7 @@ draw(cx){drawFloor(cx,Wg);sl.forEach(e=>dS(cx,'slime',e.x,e.y,3));if(!(p.inv&&Ma
 if(p.sw>0){cx.fillStyle='#fff';for(let a=-1;a<=1;a++){const px=p.x+p.fx*26+(-p.fy)*a*10,py=p.y+p.fy*26+p.fx*a*10;cx.fillRect(Math.round(px)-3,Math.round(py)-3,6,6)}}},
 hud(){return `Hearts ${s.hp}   Slimes ${s.k}/15   Time ${Math.max(0,Math.ceil(s.t))}`}}}};
 
-/* co-op tower (server-driven) */
-let T=null,R=null,ES=null;
-const NOLOGIN='Log in or create an account first. Co-op uses your account so the server knows your weapon.';
-const me=()=>R&&R.players.find(p=>p.u===USER.u)||{hp:100,dead:0,dealt:0,nm:'',eq:S.eq};
-const view=()=>{const m=me();return[m,...R.players.filter(p=>p.u!==USER.u)]};
-function sub(x){S.sub=x;render()}function pick(n){S.pick=n;render()}
-
-const LE=m=>{const e=document.getElementById('lerr');if(e)e.textContent=m};
-async function createRoom(){LE('Creating…');try{await save();const j=await api('/api/room/create',{cap:S.pick||2});openRoom(j.code)}catch(e){LE(e.message)}}
-async function joinRoom(){const code=document.getElementById('rc').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');if(code.length<3)return LE('Room code: 3 to 12 letters or numbers.');
-LE('Joining…');try{await save();const j=await api('/api/room/join',{code});openRoom(j.code)}catch(e){LE(e.message)}}
-
-const PH={wait:'wait',fight:'tower',reward:'trew',over:'tover'};
-
-function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
-const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
-const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
-
-function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
-const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
-const act=isH?`<button class="go" onclick="startTower()" ${ps.length<2?'disabled':''}>${ps.length<2?'Need 2 players to start':'Start tower'}</button>`:`<p>Waiting for the host to start the tower.</p>`;
-return `<div class="box" style="max-width:560px;margin:0 auto"><h2>Waiting room</h2><p>Room code: <b>${esc(R.code)}</b>. Friends choose Join room and enter it. Players: ${ps.length}/${R.cap}</p><div class="wsg">${sl}</div><div id="lerr" class="err"></div>${act}<button style="margin-top:8px;width:100%;text-align:center" onclick="tleave()">Leave room</button></div>`}
-function startTower(){api('/api/room/start',{}).catch(e=>LE(e.message))}
-
-function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
-
-function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
-
-/* ================= v3 layer (overrides earlier definitions) ================= */
+/* ================= v3 layer ================= */
 const IC={forge:["...xx...","...xx...","...xx...","xxxxxxxx",".yyyyyy.","..yyyy..","..yyyy..",".yyyyyy."],
 map:["xxxxxxxx","x.y..y.x","x..yy..x","x.y..y.x","x..yy..x","x.y..y.x","x......x","xxxxxxxx"],
 shop:["..xxxx..",".x....x.","xxxxxxxx","xyyyyyyx","xyyxxyyx","xyyyyyyx","xyyyyyyx","xxxxxxxx"],
@@ -752,7 +719,7 @@ gift:["..x.x...",".xxxxx..","xxxyxxx.","xxxyxxx.","xyyyyyx.","xxxyxxx.","xxxyxxx
 user:["..xxxx..",".xxxxxx.",".xxxxxx.","..xxxx..","........","xxxxxxxx","xxxxxxxx","xxxxxxxx"]};
 function ic(k,sz){const r=IC[k];let o=`<svg viewBox="0 0 8 8" width="${sz||22}" height="${sz||22}" shape-rendering="crispEdges" aria-hidden="true">`;r.forEach((row,y)=>{for(let x=0;x<8;x++){const c=row[x];if(c=='x')o+=`<rect x="${x}" y="${y}" width="1" height="1" fill="currentColor"/>`;else if(c=='y')o+=`<rect x="${x}" y="${y}" width="1" height="1" fill="var(--acc)"/>`}});return o+'</svg>'}
 const W2E=()=>({h:W2BASE[0],b:W2BASE[1],g:W2BASE[2],c:W2BASE[3]});
-
+let FXC='';
 function toast(m){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.setAttribute('role','status');document.body.appendChild(t)}t.textContent=m;t.className='show';clearTimeout(toast.t);toast.t=setTimeout(()=>{t.className=''},3200)}
 function fresh(clears){return{owned:[...W1BASE],eq:{h:0,b:6,g:13,c:18},oa:[...W2BASE],ea:W2E(),hpup:0,hpa:0,boss:0,b2:0,world:1,cl1:0,cl2:0,clears:clears||0,tb:0,coins:0,dia:0,gems:0,gl:[],fxo:[],fx:'',perm:[],ann:0,rev:0,streak:0,daily:'',dailyReady:false,tgt:null,gain:0,gdia:0,hp:100,bhp:0,cd:false,log:[],scr:'forge',rew:[],tab:'b',last:null,rs:false,n:0}}
 function snap(){const w=S.world;return{owned:w==1?S.owned:S.oa,eq:w==1?S.eq:S.ea,owned2:w==2?S.owned:S.oa,eq2:w==2?S.eq:S.ea,boss:S.boss,b2:S.b2,clears:S.clears,coins:S.coins,dia:S.dia,hpup:w==1?S.hpup:S.hpa,hpup2:w==2?S.hpup:S.hpa,world:w,cl1:S.cl1,fx:S.fx,rev:S.rev}}
@@ -786,6 +753,7 @@ function eq(id){sfx.equip();S.dp=id;S.eq[P[id].s]=id;save();render()}
 async function doReset(){const perm=S.perm||[],cl=S.clears,tb=S.tb,ann=S.ann,gems=S.gems,gl=S.gl,fxo=S.fxo,fx=S.fx,rev=S.rev,dr=S.dailyReady;S=fresh(cl);Object.assign(S,{perm,tb,ann,gems,gl,fxo,fx,rev,dailyReady:dr});
 S.owned=[...new Set([...W1BASE,...perm.filter(i=>!P[i].wd)])];S.oa=[...new Set([...W2BASE,...perm.filter(i=>P[i].wd)])];S.scr='forge';
 if(USER){try{const j=await api('/api/save',{reset:1});(j.customs||[]).forEach(Game.addCustom);applySave(j.save)}catch(e){STATE='save failed'}}render()}
+function reset(){if(!S.rs){S.rs=true;render();return}doReset()}
 
 /* ----- accounts ----- */
 function setUser(j){USER={u:j.user.username,name:j.user.name,verified:j.user.verified,needsInfo:j.user.needsInfo,age:j.user.age,caps:j.user.caps||{}}}
@@ -795,7 +763,7 @@ if(TOKEN){try{const j=await api('/api/me');setUser(j);(j.customs||[]).forEach(Ga
 const q=new URLSearchParams(location.search);if(q.get('paid')){history.replaceState(null,'',location.pathname);if(q.get('paid')=='1'&&USER){toast('Payment received. Adding your gems…');let n=0;const t=setInterval(async()=>{n++;try{const j=await api('/api/me');if(j.save.gems>S.gems){S.gems=j.save.gems;clearInterval(t);toast('Gems added!');sfx.gift();render()}}catch(e){}if(n>8)clearInterval(t)},2500)}}
 render();if(GIFT)showGift(GIFT);else if(USER&&USER.needsInfo&&!sessionStorage.getItem('fb:skipinfo'))openProfile()}
 function out(){api('/api/logout',{}).catch(()=>{});TOKEN='';localStorage.removeItem('fb:token');closeRoom();USER=null;S=fresh();S.scr='home';render()}
-function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label>${MODE=='new'?'<label>Email<input id="f-e" type="email" maxlength="120" autocomplete="email"></label><label>Date of birth<input id="f-d" type="date"></label>':''}<label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key=='Enter')submit()"></label>${MODE=='new'?'<p class="fine">We use your email to verify your account and your age to keep younger players safe. Co-op needs age 8+. Friends, chat and buying need age 13+.</p>':''}<div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
+function drawM(){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true" aria-label="Account"><div class="tabs"><button class="${MODE=='in'?'on':''}" onclick="setMode('in')">Log in</button><button class="${MODE=='new'?'on':''}" onclick="setMode('new')">Create account</button></div>${MODE=='new'?'<label>Name<input id="f-n" maxlength="20" autocomplete="nickname"></label>':''}<label>Username<input id="f-u" maxlength="16" autocomplete="username"></label>${MODE=='new'?'<label>Email<input id="f-e" type="email" maxlength="120" autocomplete="email"></label><label>Date of birth<input id="f-d" type="date"></label>':''}<label>Password<input id="f-p" type="password" autocomplete="${MODE=='new'?'new-password':'current-password'}" onkeydown="if(event.key==\'Enter\')submit()"></label>${MODE=='new'?'<p class="fine">We use your email to verify your account and your age to keep younger players safe. Co-op needs age 8+. Friends, chat and buying need age 13+.</p>':''}<div id="err" class="err" role="alert"></div><button class="go" onclick="submit()">${MODE=='in'?'Log in':'Create account'}</button><button onclick="closeM()" style="margin-top:8px;width:100%;text-align:center">Cancel</button></div></div>`;document.getElementById(MODE=='new'?'f-n':'f-u').focus()}
 async function submit(){const E=m=>{document.getElementById('err').textContent=m},g=id=>document.getElementById(id);
 const u=g('f-u').value.trim().toLowerCase(),pw=g('f-p').value,n=MODE=='new'?g('f-n').value.trim():'',em=MODE=='new'?g('f-e').value.trim():'',dob=MODE=='new'?g('f-d').value:'';
 if(MODE=='new'&&!n)return E('Enter your name.');
@@ -807,7 +775,7 @@ try{j=await api(MODE=='new'?'/api/signup':'/api/login',{username:u,password:pw,n
 closeM();render();
 if(MODE=='new'&&!USER.verified)openVerify(j.devCode,j.mailSent);else if(GIFT)showGift(GIFT);else if(USER.needsInfo)openProfile()}
 function modal(html){document.getElementById('modal').innerHTML=`<div class="ov" onclick="if(event.target==this)closeM()"><div class="dlg" role="dialog" aria-modal="true">${html}</div></div>`}
-function openVerify(dev,sent){modal(`<h2>Check your email</h2><p>We sent a 6-digit code to verify your account. It works for 15 minutes.${dev?`<br><b>Test mode:</b> your code is ${dev}`:''}${sent===false?'<br>The email could not be sent. Try Resend.':''}</p><label>Code<input id="vc" inputmode="numeric" maxlength="6" autocomplete="one-time-code" onkeydown="if(event.key=='Enter')doVerify()"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="doVerify()">Verify</button><div class="btnrow" style="margin-top:8px"><button onclick="resendCode()">Resend code</button><button onclick="closeM()">Later</button></div><p class="fine">You can keep playing solo without verifying. Co-op, friends and buying need a verified email.</p>`)}
+function openVerify(dev,sent){modal(`<h2>Check your email</h2><p>We sent a 6-digit code to verify your account. It works for 15 minutes.${dev?`<br><b>Test mode:</b> your code is ${dev}`:''}${sent===false?'<br>The email could not be sent. Try Resend.':''}</p><label>Code<input id="vc" inputmode="numeric" maxlength="6" autocomplete="one-time-code" onkeydown="if(event.key==\'Enter\')doVerify()"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="doVerify()">Verify</button><div class="btnrow" style="margin-top:8px"><button onclick="resendCode()">Resend code</button><button onclick="closeM()">Later</button></div><p class="fine">You can keep playing solo without verifying. Co-op, friends and buying need a verified email.</p>`)}
 async function doVerify(){const E=m=>{document.getElementById('err').textContent=m};try{const j=await api('/api/verify',{code:document.getElementById('vc').value.trim()});USER.verified=j.user.verified;USER.caps=j.user.caps;closeM();toast('Email verified!');sfx.gift();render()}catch(e){E(e.message)}}
 async function resendCode(){const E=m=>{document.getElementById('err').textContent=m};try{const j=await api('/api/verify/resend',{});E(j.devCode?'Test mode code: '+j.devCode:'A new code was sent.')}catch(e){E(e.message)}}
 function openProfile(){modal(`<h2>Finish your account</h2><p>Add your email and date of birth. We need them to verify you and to keep younger players safe.</p><label>Email<input id="pe" type="email" maxlength="120"></label><label>Date of birth<input id="pd" type="date"></label><div id="err" class="err" role="alert"></div><button class="go" onclick="saveProfile()">Save and send code</button><button style="margin-top:8px;width:100%;text-align:center" onclick="sessionStorage.setItem('fb:skipinfo','1');closeM()">Later</button>`)}
@@ -871,14 +839,47 @@ return `<div class="tabs t3"><button class="${!dm?'on':''}" onclick="scur('c')">
 <div class="det" style="--tc:${sel?TC[sel.t]:'var(--line)'}">${sel&&items.includes(sel)?`<b>${esc(sel.n)}</b> <span>${desc(sel)}</span><button class="go sm" ${have<pr(sel)?'disabled':''} onclick="buy(${sel.id})">Buy ${pr(sel)} ${dm?'diamonds':'coins'}</button>`:`<span>Tap an item. You have ${S.coins} coins${S.cl1?` and ${S.dia} diamonds`:''}. ${dm?'These are World 2 parts.':'These are World 1 parts.'} God parts are never sold.</span>`}</div>`}
 let SHOPINFO=null;
 async function loadShop(){try{SHOPINFO=await api('/api/shop')}catch(e){SHOPINFO={packs:Game.GEM_PACKS,payments:false,canBuy:false}}if(S.scr=='shop'&&S.shopc=='g')render()}
-function gemShopH(){const tabs=`<div class="tabs t3"><button onclick="scur('c')">Coins</button>${S.cl1?"<button onclick=\"scur('d')\">Diamonds</button>":''}<button class="on">Gems</button></div>`;
-if(!USER)return tabs+`<div class="box"><p>Log in to buy gems.</p><button class="go" onclick="openM()">Log in</button></div>`;
-if(!SHOPINFO)loadShop();const ok=!!(USER.caps&&USER.caps.buy);
-const packs=(SHOPINFO?SHOPINFO.packs:Game.GEM_PACKS).map(k=>`<button class="pack" ${ok?'':'disabled'} onclick="checkout('${k.id}')">${ic('gem',22)}<b>${k.gems}</b><small>$${(k.cents/100).toFixed(2)}</small></button>`).join('');
-const items=P.filter(p=>p.gl).map(p=>`<button class="tile ${S.gl.includes(p.id)?'on':''}" style="--tc:${TC[7]}" onclick="gsel(${p.id})" aria-label="${esc(p.n)}">${ico(p,36)}<small>${esc(p.n)}</small><em>${S.gl.includes(p.id)?'owned':p.gp}</em></button>`).join('');
-const fxs=FX.map(f=>`<button class="fxb ${S.fx==f.id?'on':''}" onclick="${S.fxo.includes(f.id)?`equipFx('${f.id}')`:`buyFx('${f.id}')`}"><i style="background:${f.c}"></i>${f.n}<em>${S.fxo.includes(f.id)?(S.fx==f.id?'on':'equip'):f.g}</em></button>`).join('');
-const sel=P[S.gsel];
-return tabs+`<div class="gbal">${ic('gem',20)} <b>${S.gems}</b> gems${ok?'':' · buying needs a verified email and age 13+'}${ok&&SHOPINFO&&!SHOPINFO.payments?' · payments are not set up on this server yet':''}</div><div class="packs">${packs}</div><h3>Prism super items</h3><p class="fine">Work in World 1 and World 2 and stay after New run.</p><div class="tiles tl2">${items}</div><div class="det" style="--tc:${TC[7]}">${sel&&sel.gl?`<b>${esc(sel.n)}</b> <span>${desc(sel)}</span>${S.gl.includes(sel.id)?'':`<button class="go sm" ${S.gems<sel.gp||!ok?'disabled':''} onclick="buyGem(${sel.id})">Buy ${sel.gp} gems</button>`}`:'<span>Tap an item to see its stats.</span>'}</div><h3>Effects</h3><p class="fine">Cosmetic only. Work in both worlds.</p><div class="fxl">${fxs}${S.fx?`<button class="fxb" onclick="equipFx('')">Remove effect</button>`:''}</div>`}
+
+function gemShopH(){
+  const tabs = `<div class="tabs t3"><button onclick="scur('c')">Coins</button>${S.cl1 ? '<button onclick="scur(\'d\')">Diamonds</button>' : ''}<button class="on">Gems</button></div>`;
+  if (!USER) return tabs + `<div class="box"><p>Log in to buy gems.</p><button class="go" onclick="openM()">Log in</button></div>`;
+  if (!SHOPINFO) loadShop();
+  const ok = !!(USER.caps && USER.caps.buy);
+  const packs = (SHOPINFO ? SHOPINFO.packs : Game.GEM_PACKS).map(k => `
+    <button class="pack" ${ok ? '' : 'disabled'} onclick="checkout('${k.id}')">
+      ${ic('gem', 22)}<b>${k.gems}</b><small>₱${Math.round((k.cents / 100) * 58)}</small>
+    </button>
+  `).join('');
+
+  const items = P.filter(p => p.gl).map(p => `
+    <button class="tile ${S.gl.includes(p.id) ? 'on' : ''}" style="--tc:${TC[7]}" onclick="gsel(${p.id})" aria-label="${esc(p.n)}">
+      ${ico(p, 36)}<small>${esc(p.n)}</small><em>${S.gl.includes(p.id) ? 'owned' : p.gp}</em>
+    </button>
+  `).join('');
+
+  const fxs = FX.map(f => `
+    <button class="fxb ${S.fx == f.id ? 'on' : ''}" onclick="${S.fxo.includes(f.id) ? `equipFx('${f.id}')` : `buyFx('${f.id}')`}">
+      <i style="background:${f.c}"></i>${f.n}<em>${S.fxo.includes(f.id) ? (S.fx == f.id ? 'on' : 'equip') : f.g}</em>
+    </button>
+  `).join('');
+
+  const sel = P[S.gsel];
+
+  return tabs + `
+    <div class="gbal">${ic('gem', 20)} <b>${S.gems}</b> gems${ok ? '' : ' · buying needs a verified email and age 13+'}</div>
+    <div class="packs">${packs}</div>
+    <h3>Prism super items</h3>
+    <p class="fine">Work in World 1 and World 2 and stay after New run.</p>
+    <div class="tiles tl2">${items}</div>
+    <div class="det" style="--tc:${TC[7]}">
+      ${sel && sel.gl ? `<b>${esc(sel.n)}</b> <span>${desc(sel)}</span>${S.gl.includes(sel.id) ? '' : `<button class="go sm" ${S.gems < sel.gp || !ok ? 'disabled' : ''} onclick="buyGem(${sel.id})">Buy ${sel.gp} gems</button>`}` : '<span>Tap an item to see its stats.</span>'}
+    </div>
+    <h3>Effects</h3>
+    <p class="fine">Cosmetic only. Work in both worlds.</p>
+    <div class="fxl">${fxs}${S.fx ? `<button class="fxb" onclick="equipFx('')">Remove effect</button>` : ''}</div>
+  `;
+}
+
 function gsel(id){S.gsel=id;render()}
 function adoptGem(sv){S.gems=sv.gems;S.gl=sv.gl;S.fxo=sv.fxo;S.rev=sv.rev|0;render()}
 async function buyGem(id){try{const j=await api('/api/gems/buy',{kind:'item',id});adoptGem(j.save);sfx.buy();toast('Bought '+P[id].n)}catch(e){toast(e.message);sfx.deny()}}
@@ -897,6 +898,12 @@ async function loadTop(){try{const r=await fetch('/api/top'),j=await r.json(),e=
 function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back</button></div>`}
 
 /* ----- co-op fixes ----- */
+const NOLOGIN='Log in or create an account first. Co-op uses your account so the server knows your weapon.';
+let T=null,R=null,ES=null;
+const me=()=>R&&R.players.find(p=>p.u===USER.u)||{hp:100,dead:0,dealt:0,nm:'',eq:S.eq};
+const view=()=>{const m=me();return[m,...R.players.filter(p=>p.u!==USER.u)]};
+function sub(x){S.sub=x;render()}function pick(n){S.pick=n;render()}
+
 function lobbyH(){const sb=S.sub||'menu',bk=`<button style="margin-top:8px;width:100%;text-align:center" onclick="${sb=='menu'?"S.scr='forge'":"S.sub='menu'"};render()">${sb=='menu'?'Back':'Back'}</button>`;let b;
 if(!USER)b=`<p>${NOLOGIN}</p><button class="go" onclick="openM()">Log in or create account</button>`;
 else if(S.world==2)b=`<p>The co-op tower uses World 1 gear. Travel to World 1 to play it.</p><button class="go" onclick="travel(1)">Travel to World 1</button>`;
@@ -905,12 +912,18 @@ else if(sb=='menu')b=`<p>Climb a tower with friends. Tower bosses hit harder and
 else if(sb=='create'){const pk=S.pick||2;b=`<p>Choose the maximum number of players.</p><div class="tabs">${[2,3,4].map(n=>`<button class="${pk==n?'on':''}" onclick="pick(${n})">${n} players</button>`).join('')}</div><div id="lerr" class="err" role="alert"></div><button class="go" onclick="createRoom()">Create room</button>`}
 else b=`<p>Enter the room code your friend shared.</p><label>Room code<input id="rc" maxlength="12"></label><div id="lerr" class="err" role="alert"></div><button class="go" onclick="joinRoom()">Join room</button>`;
 return `<div class="box"><h2>Co-op Tower</h2>${b}${bk}</div>`}
+const LE=m=>{const e=document.getElementById('lerr');if(e)e.textContent=m};
+async function createRoom(){LE('Creating…');try{await save();const j=await api('/api/room/create',{cap:S.pick||2});openRoom(j.code)}catch(e){LE(e.message)}}
+async function joinRoom(){const code=document.getElementById('rc').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');if(code.length<3)return LE('Room code: 3 to 12 letters or numbers.');
+LE('Joining…');try{await save();const j=await api('/api/room/join',{code});openRoom(j.code)}catch(e){LE(e.message)}}
+
 function openRoom(code){closeRoom();T={cd:0,cdt:0,cdu:0,fx:0,last:null,seq:-1,sig:'',hold:0};
 ES=new EventSource(`/api/room/events?code=${code}&token=${TOKEN}`);ES.onmessage=e=>{R=JSON.parse(e.data);onRoom()};
 ES.onerror=()=>{if(ES&&ES.readyState==2){closeRoom();S.scr='lobby';S.sub='menu';render()}}}
 function closeRoom(){if(T&&T.cdt)clearTimeout(T.cdt);if(ES)ES.close();ES=null;R=null;T=null}
 function cdMs(){return Math.max(650,1000/st().spd)}
-function tbtn(){const b=document.querySelector('.arena .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);b.textContent=dead?'Down':T.cd?'Recovering…':'Swing'}
+function tbtn(){const b=document.querySelector('.bt-scene .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);const sp=b.querySelector('span');if(sp)sp.textContent=dead?'DOWN':T.cd?'...':'SWING';const c=b.querySelector('.cdf');if(c){c.style.display=T.cd?'':'none';if(T.cd){c.style.animation='none';void c.offsetWidth;c.style.animation='';c.style.animationDuration=cdMs()+'ms'}}}
+const PH={wait:'wait',fight:'tower',reward:'trew',over:'tover'};
 function onRoom(){if(!T||T.hold)return;(R.cu||[]).forEach(Game.addCustom);const ph=PH[R.phase],sig=R.phase+R.floor+R.players.map(p=>p.u).join();S.tb=Math.max(S.tb||0,R.best);if(R.coins!=null)S.coins=R.coins;
 const evs=(R.evs&&R.evs.length?R.evs:R.ev?[R.ev]:[]).filter(e=>e.seq>T.seq);
 if(T.cd&&Date.now()>T.cdu+500){T.cd=0;tbtn()}
@@ -919,9 +932,21 @@ if(S.scr!=ph||sig!==T.sig){T.sig=sig;sfx[{wait:'join',tower:'start',trew:'clear'
 if(evs.length){T.seq=evs[evs.length-1].seq;evs.forEach(e=>animate(e))}
 tupd();tbtn()}
 function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx=1;render();T.fx=0;return}const v=view(),k=v.findIndex(p=>p.u===ev.by);if(k>0)rswing(k,v[k])}
+function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
+const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
+const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
+
+function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
+const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
+const act=isH?`<button class="go" onclick="startTower()" ${ps.length<2?'disabled':''}>${ps.length<2?'Need 2 players to start':'Start tower'}</button>`:`<p>Waiting for the host to start the tower.</p>`;
+return `<div class="box" style="max-width:560px;margin:0 auto"><h2>Waiting room</h2><p>Room code: <b>${esc(R.code)}</b>. Friends choose Join room and enter it. Players: ${ps.length}/${R.cap}</p><div class="wsg">${sl}</div><div id="lerr" class="err"></div>${act}<button style="margin-top:8px;width:100%;text-align:center" onclick="tleave()">Leave room</button></div>`}
+function startTower(){api('/api/room/start',{}).catch(e=>LE(e.message))}
 function tatk(){if(!T||T.cd||R.phase!='fight'||me().dead)return;T.cd=1;T.cdu=Date.now()+cdMs();tbtn();clearTimeout(T.cdt);T.cdt=setTimeout(()=>{if(T){T.cd=0;tbtn()}},cdMs());
 api('/api/room/swing',{}).catch(()=>{if(T){T.cd=0;clearTimeout(T.cdt);tbtn()}})}
+
+function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
 function ttake(id){api('/api/room/reward',{id}).then(j=>{if(S.world==1){S.owned=j.owned;S.rev=j.rev|0}}).catch(()=>{})}
+function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
 function tleave(){api('/api/room/leave',{}).catch(()=>{});closeRoom();S.scr='forge';render()}
 
 /* ----- friends, chat, trading ----- */
@@ -966,15 +991,72 @@ const admVerify=()=>adm('/api/admin/verify',{username:AD.who},()=>`${AD.who} is 
 const admNews=()=>{const t=document.getElementById('nt').value,x=document.getElementById('nx').value;adm('/api/admin/news',{title:t,text:x},()=>'Announcement posted.').then(loadNews)};
 const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNews);
 
-function adminH(){const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;let b;
-const tab=(k,l)=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${l}</button>`;
-if(AD.tab=='give')b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
-else if(AD.tab=='custom'){const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
-b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>World<select onchange="AD.cust.world=this.value;render()"><option value="1" ${c.world==1?'selected':''}>World 1</option><option value="2" ${c.world==2?'selected':''}>World 2</option></select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.slice(0,7).map((n,i)=>`<option value="${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`}
-else if(AD.tab=='coins')b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go sm" onclick="admCoins()">Coins</button><button class="go sm" onclick="admDia()">Diamonds</button><button class="go sm" onclick="admGems()">Gems</button></div>`;
-else if(AD.tab=='news')b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>${esc(n.title)}</b><button onclick="admDelNews(${n.id})">Delete</button></div>`).join('')}`;
-else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div><div style="margin-top:14px;"><h3>Pending GCash Payments</h3><div id="gcashAdminList">Loading...</div></div>`;
-return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`}
+function adminH(){
+  const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;
+  let b;
+  const tab=(k,l)=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${l}</button>`;
+
+  if(AD.tab=='give') b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
+  else if(AD.tab=='gcash') {
+    b = `
+      <h3>Pending GCash Payments</h3>
+      <div id="gcashAdminList" class="box" style="background:var(--bg2); border:3px solid var(--px); margin-top:8px;">
+        <p class="fine">Loading pending GCash payments…</p>
+      </div>
+    `;
+    setTimeout(loadAdminGcash, 50);
+  }
+  else if(AD.tab=='custom'){
+    const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
+    b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="\${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>World<select onchange="AD.cust.world=this.value;render()"><option value="1" ${c.world==1?'selected':''}>World 1</option><option value="2" ${c.world==2?'selected':''}>World 2</option></select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.slice(0,7).map((n,i)=>`<option value="\${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="\${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`;
+  }
+  else if(AD.tab=='coins') b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go sm" onclick="admCoins()">Coins</button><button class="go sm" onclick="admDia()">Diamonds</button><button class="go sm" onclick="admGems()">Gems</button></div>`;
+  else if(AD.tab=='news') b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>\${esc(n.title)}</b><button onclick="admDelNews(\${n.id})">Delete</button></div>`).join('')}`;
+  else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div>`;
+
+  return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('gcash','GCash')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`;
+}
+
+// ----- GCash Client Logic -----
+let currentGcashPack = null;
+
+function checkout(packId) {
+  const pack = GEM_PACKS.find(p => p.id === packId);
+  if (!pack) return;
+
+  currentGcashPack = packId;
+  const phpPrice = '₱' + Math.round((pack.cents / 100) * 58); 
+  
+  document.getElementById('gcashPrice').textContent = `${phpPrice} (${pack.gems} Gems)`;
+  document.getElementById('gcashRefInput').value = '';
+  document.getElementById('gcashErr').textContent = '';
+  document.getElementById('gcashModal').style.display = 'grid';
+}
+
+function closeGcashModal() {
+  document.getElementById('gcashModal').style.display = 'none';
+  currentGcashPack = null;
+}
+
+async function submitGcashModal() {
+  const refNo = document.getElementById('gcashRefInput').value.trim();
+  const errEl = document.getElementById('gcashErr');
+  
+  if (!/^\d{8,13}\$/.test(refNo)) {
+    errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
+    return;
+  }
+
+  errEl.textContent = 'Submitting…';
+
+  try {
+    const res = await api('/api/shop/gcash-submit', { packId: currentGcashPack, refNo });
+    toast(res.message || 'Payment submitted!');
+    closeGcashModal();
+  } catch (err) {
+    errEl.textContent = err.message || 'Submission failed.';
+  }
+}
 
 async function loadAdminGcash() {
   try {
@@ -1020,84 +1102,35 @@ async function rejectGcash(requestId) {
   } catch (e) { toast(e.message); }
 }
 
-/* ===== v4: battle screens ===== */
-const elc=e=>EC[e]||'#8a8f99';
-const cdBar=(on,ms)=>`<i class="cdf" ${on?`style="animation-duration:${ms}ms"`:'style="display:none"'}></i>`;
-function fightH(){const s=st(),b=cb(),rec=Game.recoil(b.r,s.def,b.fl),L=S.last,fx=S.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),ag=S.ag,tele=ag&&ag.tele,gOn=ag&&Date.now()<ag.gcd,pct=Math.max(0,S.bhp)/b.hp*100,ph=Math.max(0,S.hp)/MX()*100;
-return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class="bt-name"><b>${esc(b.n)}</b>${b.w2?'<small>WORLD 2</small>':''}${isRep()?'<small>REPEAT</small>':''}<span class="wk" style="--ec:${elc(b.w)}">weak: ${b.w}</span></div><div class="bt-hp"><i id="fbf" style="width:${pct}%"></i><span id="fbt">${Math.max(0,S.bhp)} / ${b.hp}</span></div></div>
-<div class="bt-stage"><div class="sw ${fx?'go':''}" style="${aura()}">${svg(null,'0 0 32 66',63,130)}</div>${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''} ${tele?'tele':''}" id="fboss" style="--bk:${b.k}">${bspr(b,160)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div><div id="tele" class="bt-tele ${tele?'on':''}">${tele?esc(b.n)+' is winding up! GUARD!':''}</div><div class="bt-ev" id="evl">${S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}</div></div>
-<div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="fpf" style="width:${ph}%"></i><span id="fpt">${Math.max(0,S.hp)} / ${MX()}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span class="el" style="--ec:${elc(s.e)}">${s.e}</span></div><div class="bt-btns"><button class="go swing big" onclick="atk()" ${S.cd?'disabled':''}>${cdBar(S.cd,cdMs())}<span>${S.cd?'...':'SWING'}</span></button>${b.aggr?`<button id="gbtn" class="guard big" onclick="guard()" ${gOn?'disabled':''}>${gOn?'...':'GUARD'}</button>`:''}<button class="ret" onclick="retreat()">Retreat</button></div></div></div>`}
-function fupd(){if(S.scr!='fight')return;const b=cb(),$=id=>document.getElementById(id);if(!$('fbf'))return;
-$('fbf').style.width=Math.max(0,S.bhp)/b.hp*100+'%';$('fbt').textContent=`${Math.max(0,S.bhp)} / ${b.hp}`;$('fpf').style.width=Math.max(0,S.hp)/MX()*100+'%';$('fpt').textContent=`${Math.max(0,S.hp)} / ${MX()}`;
-const ag=S.ag;$('fboss').classList.toggle('tele',!!(ag&&ag.tele));const t=$('tele');t.textContent=ag&&ag.tele?b.n+' is winding up! GUARD!':'';t.classList.toggle('on',!!(ag&&ag.tele));
-const g=$('gbtn');if(g){const on=ag&&Date.now()<ag.gcd;g.disabled=!!on;g.textContent=on?'...':'GUARD'}
-$('evl').innerHTML=S.log.slice(0,2).map(l=>'<div>'+l+'</div>').join('')}
-function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
-const SLOT2=['left:max(4px,calc(50% - 168px));top:4%','left:calc(50% + 100px);top:4%','left:max(4px,calc(50% - 168px));top:52%','left:calc(50% + 100px);top:52%'],SLD=[1,-1,1,-1];
-function slotH(k,p,fx){return `<div class="slot ${p.dead||p.off?'dd':''}" id="sl${k}" style="${SLOT2[k]};--d:${SLD[k]}"><div class="tsw ${fx&&k==0?'go':''}" id="tsw${k}" style="${k==0?aura():''}">${svg(p.eq,'0 0 32 66',50,104)}</div><div class="tag">${esc(p.nm)}</div></div>`}
-function teamH(){return view().map(p=>`<div class="tc ${p.dead||p.off?'dn':''} ${p.u===USER.u?'me':''}"><b>${esc(p.nm)}</b><div class="bt-hp sm"><i style="width:${Math.max(0,p.hp)/(p.mx||100)*100}%"></i></div><small>${p.off?'offline':p.dead?'down':p.hp+' HP'} · ${p.dealt}</small></div>`).join('')}
-function towerH(){const s=st(),b=R.boss,L=T.last,fx=T.fx&&L,sc=fxc(L&&L.t?'#ffd84d':(s.e=='none'?'#fff':EC[s.e])),m=me(),rec=Game.recoil(b.r,s.def),pct=R.bossHp/R.bossMax*100,ph=Math.max(0,m.hp)/(m.mx||100)*100;
-return `<div class="bt-scene" style="--bk:${b.k}"><div class="bt-top"><div class="bt-name"><b>Floor ${R.floor}: ${esc(b.n)}</b>${b.sp?'<small>SPECIAL</small>':''}<span class="wk" style="--ec:${elc(b.w)}">weak: ${b.w}</span></div><div class="bt-hp"><i id="bfill" style="width:${pct}%"></i><span id="btxt">${R.bossHp} / ${R.bossMax}</span></div></div>
-<div class="bt-stage tw" id="tst">${view().slice(0,4).map((p,k)=>slotH(k,p,fx)).join('')}${fx?`<div class="slash${S.fx=='rainbow'?' rb':''}" style="--sc:${sc}"></div><div class="spark" style="--sc:${sc}"></div>`:''}<div class="boss ${fx?'hit':''}" id="tboss" style="--bk:${b.k}">${spr(b.i,150,b.set)}${fx?`<span class="fl" style="color:${L.t?'var(--acc)':'var(--tx)'}">-${L.d}</span>`:''}</div></div>
-<div class="bt-bot"><div class="bt-me"><b>YOU</b><div class="bt-hp me"><i id="myhp" style="width:${ph}%"></i><span id="myhpt">${Math.max(0,m.hp)} / ${m.mx||100}</span></div></div><div class="bt-chips"><span>ATK ${s.atk}</span><span>DEF ${s.def}</span><span>Recoil -${rec}</span><span>Room ${esc(R.code)}</span></div><div id="team" class="team2">${teamH()}</div><div class="bt-btns"><button class="go swing big" onclick="tatk()" ${T.cd||m.dead?'disabled':''}>${cdBar(T.cd,Math.max(0,T.cdu-Date.now()))}<span>${m.dead?'DOWN':T.cd?'...':'SWING'}</span></button><button class="ret" onclick="tleave()">Leave</button></div>${m.dead?'<p class="fine">You are down. A teammate must clear the floor to revive you.</p>':''}</div></div>`}
-function tupd(){if(S.scr!='tower')return;const f=document.getElementById('bfill');if(!f)return;f.style.width=R.bossHp/R.bossMax*100+'%';document.getElementById('btxt').textContent=`${R.bossHp} / ${R.bossMax}`;document.getElementById('team').innerHTML=teamH();const m=me();document.getElementById('myhp').style.width=Math.max(0,m.hp)/(m.mx||100)*100+'%';document.getElementById('myhpt').textContent=`${Math.max(0,m.hp)} / ${m.mx||100}`;view().forEach((p,k)=>{const e=document.getElementById('sl'+k);if(e)e.classList.toggle('dd',!!(p.dead||p.off))})}
-function tbtn(){const b=document.querySelector('.bt-scene .swing');if(!b||!T||!R)return;const dead=me().dead;b.disabled=!!(T.cd||dead);const sp=b.querySelector('span');if(sp)sp.textContent=dead?'DOWN':T.cd?'...':'SWING';const c=b.querySelector('.cdf');if(c){c.style.display=T.cd?'':'none';if(T.cd){c.style.animation='none';void c.offsetWidth;c.style.animation='';c.style.animationDuration=cdMs()+'ms'}}}
-
 function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '';if(cur)return i<pr?`<button class="go sm" onclick="start(${i})">Fight again</button>`:`<button class="go sm" onclick="start()">Fight</button>`;return S.cl1?`<button class="go sm" onclick="travel(${w})">Travel to World ${w}</button>`:''}
 
-/* ----- render ----- */
-function render(){if(S.scr!='mini')mgStop();if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
-const a=document.getElementById('app');st();
-const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
-const h=M();document.getElementById('tbar').innerHTML=head();
-const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);nav.innerHTML=show?navH():'';nav.style.display=show?'':'none';
-const top=RL.scr!=S.scr;RL.scr=S.scr;a.innerHTML=h;if(top)a.scrollTop=0;
-if(S.scr=='mini')mgInit();if(S.scr=='cut')startCut();if(S.scr=='map')centerMap();if(S.scr=='friends'&&USER&&USER.caps.social)frStart();if(S.scr=='news')loadTop();if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
-if(S.scr=='admin')loadAdminGcash();}
+function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
+
+function render(){
+  if(S.scr!='mini')mgStop();
+  if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
+  const a=document.getElementById('app');st();
+  const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
+  const h=M();
+  document.getElementById('tbar').innerHTML=head();
+  const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);
+  nav.innerHTML=show?navH():'';
+  nav.style.display=show?'':'none';
+  const top=RL.scr!=S.scr;
+  RL.scr=S.scr;
+  a.innerHTML=h;
+  if(top)a.scrollTop=0;
+  if(S.scr=='mini')mgInit();
+  if(S.scr=='cut')startCut();
+  if(S.scr=='map')centerMap();
+  if(S.scr=='friends'&&USER&&USER.caps.social)frStart();
+  if(S.scr=='news')loadTop();
+  if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
+  if(S.scr=='admin'&&AD.tab=='gcash')loadAdminGcash();
+}
 
 const RL={scr:''};
 AD.cust.world=1;AD.q='';
-
-// ----- GCash Client Logic -----
-let currentGcashPack = null;
-
-function checkout(packId) {
-  const pack = GEM_PACKS.find(p => p.id === packId);
-  if (!pack) return;
-
-  currentGcashPack = packId;
-  const phpPrice = '₱' + Math.round((pack.cents / 100) * 58); 
-  
-  document.getElementById('gcashPrice').textContent = `${phpPrice} (${pack.gems} Gems)`;
-  document.getElementById('gcashRefInput').value = '';
-  document.getElementById('gcashErr').textContent = '';
-  document.getElementById('gcashModal').style.display = 'grid';
-}
-
-function closeGcashModal() {
-  document.getElementById('gcashModal').style.display = 'none';
-  currentGcashPack = null;
-}
-
-async function submitGcashModal() {
-  const refNo = document.getElementById('gcashRefInput').value.trim();
-  const errEl = document.getElementById('gcashErr');
-  
-  if (!/^\d{8,13}\$/.test(refNo)) {
-    errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
-    return;
-  }
-
-  errEl.textContent = 'Submitting…';
-
-  try {
-    const res = await api('/api/shop/gcash-submit', { packId: currentGcashPack, refNo });
-    toast(res.message || 'Payment submitted!');
-    closeGcashModal();
-  } catch (err) {
-    errEl.textContent = err.message || 'Submission failed.';
-  }
-}
 
 S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
 </script>
