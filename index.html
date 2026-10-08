@@ -296,6 +296,10 @@ button.sm{padding:6px 12px;width:auto!important;font-size:.85rem;flex:none}
 .team2{display:flex;gap:6px}.tc{flex:1;min-width:0;border:3px solid var(--px);background:var(--panel);padding:3px 5px;font-size:.72rem;text-align:center}
 .tc b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc.me{border-color:var(--acc)}.tc.dn{opacity:.5}.tc small{color:var(--mut)}
 @media(prefers-reduced-motion:reduce){.cdf{animation:none!important;width:100%}}
+.gclist{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.gcrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg2);border:2px solid var(--line);border-radius:8px;padding:8px 10px}
+.gcinfo{display:flex;flex-direction:column;min-width:0;flex:1 1 160px;word-break:break-all}
+.gcbtn{display:flex;gap:6px}.gcbtn button{padding:5px 12px;font-size:.85rem}
 </style></head><body><div id="shell"><div id="tbar"></div><main id="app"></main><nav id="nav"></nav></div><div id="modal"></div><div id="ver"></div>
 
 <div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
@@ -561,6 +565,7 @@ S.agT=setTimeout(()=>{if(S.scr!='fight'||!S.ag||S.over)return;agHit(b);if(S.scr=
 function agHit(b){const s=st(),g=Date.now()<S.ag.guard,dm=Math.max(1,Math.round(Game.recoil(b.aggr.pw,s.def,b.fl)*(g?.3:1)));S.hp-=dm;
 S.log.unshift(g?`You guard ${b.n}'s attack and take ${dm}.`:`${b.n} strikes you for ${dm}!`);(g?sfx.block:sfx.hurt)();if(S.hp<=0){S.hp=0;fupd();loseFight(b)}else fupd()}
 function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.now()+900;S.ag.gcd=Date.now()+1700;sfx.guard();fupd();setTimeout(fupd,1750)}
+function retreat(){if(S.over)return;stopAg();S.over=1;S.cd=false;S.fx=0;S.last=null;S.tgt=null;S.scr='forge';sfx.deny&&sfx.deny();render()}
 function fupd(){if(S.scr=='fight')render()}
 
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
@@ -940,11 +945,11 @@ if(S.scr=='tower'&&ph!='tower'&&evs.length){T.seq=evs[evs.length-1].seq;T.hold=1
 if(S.scr!=ph||sig!==T.sig){T.sig=sig;sfx[{wait:'join',tower:'start',trew:'clear',tover:'lose'}[ph]]();S.scr=ph;T.fx=0;T.last=null;T.cd=0;clearTimeout(T.cdt);if(R.ev)T.seq=R.ev.seq;render();return}
 if(evs.length){T.seq=evs[evs.length-1].seq;evs.forEach(e=>animate(e))}
 tupd();tbtn()}
-function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx=1;render();T.fx=0;return}const v=view(),k=v.findIndex(p=>p.u===ev.by);if(k>0)rswing(k,v[k])}
-function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
-const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
+function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx=1;T.anim=0;render();T.fx=0;rswing(0,me());return}const v=view(),k=v.findIndex(p=>p.u===ev.by);if(k>0)rswing(k,v[k])}
+function rswing(k,p){if(T)T.anim=Date.now()+950;const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
+const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[(P[p.eq&&p.eq.c]||{}).e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
 const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
-function tupd(){if(S.scr=='tower')render()}
+function tupd(){if(S.scr!='tower')return;if(T&&T.anim>Date.now()){clearTimeout(T.at);T.at=setTimeout(()=>{if(S.scr=='tower'&&T){T.last=null;render()}},T.anim-Date.now()+30);return}render()}
 
 function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
 const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
@@ -1055,56 +1060,41 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   AD.tab = t;
   render();
 }
-  async function loadAdminGcash() {
-  const el = document.getElementById('gcashAdminList');
-  if (!el) return;
-
-  // 1. Fetch user list if empty
-  if (!AD.users || !AD.users.length) {
-    try {
-      const uRes = await api('/api/admin/users');
-      AD.users = uRes.users || uRes || [];
-    } catch (e) {}
+let GC_SEQ=0;
+async function loadAdminGcash(){
+  const el=document.getElementById('gcashAdminList');
+  if(!el)return;
+  const seq=++GC_SEQ;
+  el.innerHTML='<p class="fine">Loading pending GCash payments…</p>';
+  let res=null,err=null;
+  const urls=['/api/admin/gcash-pending'];
+  if(AD.who)urls.push('/api/admin/gcash-pending?who='+encodeURIComponent(AD.who));
+  for(const u of urls){
+    try{res=await api(u);err=null;break}catch(e){err=e}
   }
-
-  // 2. Pick first player if AD.who is empty or invalid
-  if ((!AD.who || AD.who === '') && AD.users && AD.users.length > 0) {
-    const p = AD.users[0];
-    AD.who = typeof p === 'string' ? p : (p.u || p.username || p.id || '');
+  if(seq!==GC_SEQ||!document.getElementById('gcashAdminList'))return;
+  const box=document.getElementById('gcashAdminList');
+  if(err){
+    box.innerHTML=`<p class="err">Could not load payments: ${esc(err.message||'Failed to load')}</p><button onclick="loadAdminGcash()">Try again</button>`;
+    return;
   }
-
-  // 3. Fallback to active logged-in user
-  if (!AD.who && typeof S !== 'undefined' && S.u) {
-    AD.who = S.u;
+  let items=Array.isArray(res)?res:(res&&(res.items||res.pending||res.payments||res.list))||[];
+  if(!Array.isArray(items))items=[];
+  items=items.filter(p=>p&&(!p.status||String(p.status).toLowerCase()==='pending'));
+  if(!items.length){
+    box.innerHTML='<p class="fine">No pending GCash payments.</p><button onclick="loadAdminGcash()">Refresh</button>';
+    return;
   }
-
-  try {
-    // Send API call passing AD.who explicitly
-    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who || '')}`);
-    const items = res.items || res;
-
-    if (!Array.isArray(items) || !items.length) {
-      el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
-      return;
-    }
-
-    el.innerHTML = items.map(p => `
-      <div style="border-bottom:1px solid #444; padding:6px 0;">
-        <div><b>User:</b> ${esc(p.username || p.u || 'Unknown')}</div>
-        <div><b>Ref:</b> ${esc(p.refNo || p.ref)} | <b>Pack:</b> ${esc(p.packId || p.pack)}</div>
-        <div style="display:flex; gap:6px; margin-top:4px;">
-          <button onclick="approveGcash('${p.id}')">Approve</button>
-          <button onclick="rejectGcash('${p.id}')">Reject</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    // Display exact active player key so we can debug instantly
-    el.innerHTML = `
-      <p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>
-      <p class="fine" style="opacity:0.7;">Active player key (AD.who): "<b>${esc(AD.who)}</b>"</p>
-    `;
-  }
+  box.innerHTML=items.map(p=>{
+    const pid=p.packId||p.pack||'';
+    const pk=GEM_PACKS.find(x=>x.id===pid);
+    const info=pk?`${pk.gems} gems · ₱${Math.round(pk.cents/100*58)}`:esc(pid||'Unknown pack');
+    const when=p.createdAt||p.at||p.time||p.ts;
+    const d=when?new Date(when):null;
+    const ds=d&&!isNaN(d)?d.toLocaleString():'';
+    const id=encodeURIComponent(String(p.id));
+    return `<div class="gcrow"><div class="gcinfo"><b>${esc(p.username||p.u||p.user||'Unknown')}</b><span>${info}</span><span class="fine">Ref: ${esc(String(p.refNo||p.ref||'-'))}${ds?' · '+esc(ds):''}</span></div><div class="gcbtn"><button class="go sm" onclick="approveGcash(decodeURIComponent('${id}'))">Approve</button><button class="sm" onclick="rejectGcash(decodeURIComponent('${id}'))">Reject</button></div></div>`;
+  }).join('')+'<button style="margin-top:8px" onclick="loadAdminGcash()">Refresh</button>';
 }
 function adminH(){
   const u = `<label>Player<select onchange="AD.who=this.value; if(AD.tab==='gcash') loadAdminGcash(); else render();">${(AD.users||[]).map(x => {
@@ -1115,25 +1105,14 @@ function adminH(){
   let b;
   const tab=(k,l)=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${l}</button>`;
 
-  if(AD.tab=='give') b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="\${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="\${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
-  else if(AD.tab=='gcash') {
-    b = `
-      <h3>Pending GCash Payments</h3>
-      <div id="gcashAdminList" class="box" style="background:var(--bg2); border:3px solid var(--px); margin-top:8px;">
-        <p class="fine">Loading pending GCash payments…</p>
-      </div>
-    `;
-    if (!AD.who && typeof S !== 'undefined' && S.u) {
-  AD.who = S.u;
-}
-setTimeout(loadAdminGcash, 50);
-  }
+  if(AD.tab=='give') b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
+  else if(AD.tab=='gcash') b=`<h3>Pending GCash Payments</h3><div id="gcashAdminList" class="gclist"><p class="fine">Loading pending GCash payments…</p></div>`;
   else if(AD.tab=='custom'){
     const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
-    b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="\${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>World<select onchange="AD.cust.world=this.value;render()"><option value="1" ${c.world==1?'selected':''}>World 1</option><option value="2" ${c.world==2?'selected':''}>World 2</option></select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.slice(0,7).map((n,i)=>`<option value="\${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="\${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`;
+    b=`<div class="cgrid"><div><label>Item name<input maxlength="24" value="${esc(c.n)}" oninput="cf('n',this.value)"></label><label>Slot<select onchange="AD.cust.s=this.value;render()">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<option value="${k}" ${c.s==k?'selected':''}>${n}</option>`).join('')}</select></label><label>World<select onchange="AD.cust.world=this.value;render()"><option value="1" ${c.world==1?'selected':''}>World 1</option><option value="2" ${c.world==2?'selected':''}>World 2</option></select></label><label>Rarity<select onchange="cf('t',this.value)">${RN.slice(0,7).map((n,i)=>`<option value="${i}" ${c.t==i?'selected':''}>${n}</option>`).join('')}</select></label><label>Color<input type="color" value="${c.c}" oninput="cf('c',this.value)"></label>`+(c.s=='b'?`<label>Blade shape<select onchange="cf('shape',this.value)">${Object.keys(SHAPES).map(k=>`<option ${c.shape==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+(c.s=='g'?`<label>Guard width<input type="number" min="14" max="30" value="${c.w}" oninput="cf('w',this.value)"></label><label>Decoration<select onchange="cf('dc',this.value)">${[['','None'],['spike','Spikes'],['wing','Wings']].map(([k,n])=>`<option value="${k}" ${c.dc==k?'selected':''}>${n}</option>`).join('')}</select></label>`:'')+(c.s=='c'?`<label>Element<select onchange="cf('e',this.value)">${Object.keys(EC).filter(k=>k!='none').map(k=>`<option ${c.e==k?'selected':''}>${k}</option>`).join('')}</select></label>`:'')+`</div><div>${num('atk','Attack',1)}${num('spd','Speed bonus',.1)}${num('def','Defense',1)}${num('crit','Crit (0 to 1)',.05)}${num('life','Lifesteal (0 to 1)',.05)}<div class="cprev" id="cprev">${prevH()}</div></div></div><button class="go" onclick="admCustom()">Create and give</button>`;
   }
   else if(AD.tab=='coins') b=`<label>Amount<input type="number" value="${AD.amt}" oninput="AD.amt=this.value"></label><div class="btnrow"><button class="go sm" onclick="admCoins()">Coins</button><button class="go sm" onclick="admDia()">Diamonds</button><button class="go sm" onclick="admGems()">Gems</button></div>`;
-  else if(AD.tab=='news') b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>\${esc(n.title)}</b><button onclick="admDelNews(\${n.id})">Delete</button></div>`).join('')}`;
+  else if(AD.tab=='news') b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>${esc(n.title)}</b><button onclick="admDelNews(${n.id})">Delete</button></div>`).join('')}`;
   else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div>`;
 
   return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0;">${tab('give','Parts')}${tab('gcash','GCash')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`;
@@ -1176,10 +1155,10 @@ async function approveGcash(id) {
   if (!confirm('Approve this GCash payment?')) return;
   try {
     await api('/api/admin/gcash-approve', { id });
-    alert('Payment approved!');
+    toast('Payment approved.');
     loadAdminGcash();
   } catch(e) {
-    alert('Error: ' + (e.message || 'Failed to approve'));
+    toast('Error: '+(e.message||'Failed to approve'));
   }
 }
 
@@ -1187,10 +1166,10 @@ async function rejectGcash(id) {
   if (!confirm('Reject this GCash payment?')) return;
   try {
     await api('/api/admin/gcash-reject', { id });
-    alert('Payment rejected.');
+    toast('Payment rejected.');
     loadAdminGcash();
   } catch(e) {
-    alert('Error: ' + (e.message || 'Failed to reject'));
+    toast('Error: '+(e.message||'Failed to reject'));
   }
 }
 
@@ -1222,9 +1201,9 @@ function fightH(){
           ${bspr(b, 140)}
         </div>
         <div class="sw ${S.fx ? 'go' : ''}">${svg(null, '0 0 32 66', 50, 100)}</div>
-        ${S.last ? `<div class="fl">-\${S.last.d}</div>` : ''}
+        ${S.last ? `<div class="fl">-${S.last.d}</div>` : ''}
         <div class="bt-ev">
-          ${S.log.slice(0, 2).map(x => `<div>\${esc(x)}</div>`).join('')}
+          ${S.log.slice(0, 2).map(x => `<div>${esc(x)}</div>`).join('')}
         </div>
       </div>
 
@@ -1245,9 +1224,9 @@ function fightH(){
         <div class="bt-btns">
           <button class="go big swing" ${S.cd || S.over ? 'disabled' : ''} onclick="atk()">
             <span>${S.cd ? 'RECHARGING...' : 'ATTACK'}</span>
-            ${S.cd ? `<i class="cdf" style="animation-duration:\${Math.max(650, 1000/s.spd)}ms"></i>` : ''}
+            ${S.cd ? `<i class="cdf" style="animation-duration:${Math.max(650, 1000/s.spd)}ms"></i>` : ''}
           </button>
-          ${b.aggr ? `<button class="guard big" \${S.over ? 'disabled' : ''} onclick="guard()">GUARD</button>` : ''}
+          ${b.aggr ? `<button class="guard big" ${S.over ? 'disabled' : ''} onclick="guard()">GUARD</button>` : ''}
           <button class="ret" onclick="retreat()">RETREAT</button>
         </div>
       </div>
