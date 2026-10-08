@@ -1059,24 +1059,13 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Make sure AD.who is set to the current logged-in account if empty
-  if (!AD.who && typeof S !== 'undefined' && S.u) {
-    AD.who = S.u;
-  }
-
-  // If still empty, fall back to the first loaded user or localStorage
+  // Set default player if missing
   if (!AD.who && AD.users && AD.users.length) {
-    const u = AD.users[0];
-    AD.who = typeof u === 'string' ? u : (u.u || u.username);
-  }
-
-  // Last fallback to local storage handle
-  if (!AD.who) {
-    AD.who = localStorage.getItem('u') || '';
+    AD.who = AD.users[0].u || AD.users[0].username || '';
   }
 
   try {
-    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who)}`);
+    const res = await api('/api/admin/gcash-pending');
     const items = res.items || res;
 
     if (!Array.isArray(items) || !items.length) {
@@ -1115,7 +1104,10 @@ function adminH(){
         <p class="fine">Loading pending GCash payments…</p>
       </div>
     `;
-    setTimeout(loadAdminGcash, 50);
+    if (!AD.who && typeof S !== 'undefined' && S.u) {
+  AD.who = S.u;
+}
+setTimeout(loadAdminGcash, 50);
   }
   else if(AD.tab=='custom'){
     const c=AD.cust,num=(k,l,st)=>`<label>${l}<input type="number" step="${st}" value="${c[k]}" oninput="cf('${k}',this.value)"></label>`;
