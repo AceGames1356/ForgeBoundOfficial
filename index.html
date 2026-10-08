@@ -1156,8 +1156,6 @@ async function rejectGcash(requestId) {
 
 function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '';if(cur)return i<pr?`<button class="go sm" onclick="start(${i})">Fight again</button>`:`<button class="go sm" onclick="start()">Fight</button>`;return S.cl1?`<button class="go sm" onclick="travel(${w})">Travel to World ${w}</button>`:''}
 
-function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
-
 function fightH(){
   const b = cb();
   if(!b) return '<div class="box"><p>No boss selected.</p></div>';
@@ -1179,10 +1177,12 @@ function fightH(){
       <div class="bt-stage ${b.aggr ? 'tele-on' : ''}">
         <div class="bt-tele ${S.ag && S.ag.tele ? 'on' : ''}">WARNING: BOSS IS ATTACKING!</div>
         <div id="tboss" class="boss ${S.fx ? 'hit' : ''}">
+          <div class="slash"></div>
+          <div class="spark"></div>
           ${bspr(b, 140)}
         </div>
         <div class="sw ${S.fx ? 'go' : ''}">${svg(null, '0 0 32 66', 50, 100)}</div>
-        ${S.last ? `<div class="fl">\${S.last.d}</div>` : ''}
+        ${S.last ? `<div class="fl">-\${S.last.d}</div>` : ''}
         <div class="bt-ev">
           ${S.log.slice(0, 2).map(x => `<div>\${esc(x)}</div>`).join('')}
         </div>
@@ -1214,7 +1214,6 @@ function fightH(){
     </div>
   `;
 }
-
 function render(){
   if(S.scr!='mini')mgStop();
   if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
