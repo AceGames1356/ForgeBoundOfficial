@@ -1128,7 +1128,62 @@ function render(){
   if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
   if(S.scr=='admin'&&AD.tab=='gcash')loadAdminGcash();
 }
+function fightH(){
+  const b = cb();
+  if(!b) return '<div class="box"><p>No boss selected.</p></div>';
+  const s = st();
+  return `
+    <div class="bt-scene">
+      <div class="bt-top">
+        <div class="bt-name">
+          <b>${esc(b.n)}</b>
+          <small>LVL ${b.i+1}</small>
+          <span class="wk" style="--ec:${EC[b.w]}">WEAK: ${b.w.toUpperCase()}</span>
+        </div>
+        <div class="bt-hp">
+          <i style="width:${Math.max(0, (S.bhp/b.hp)*100)}%"></i>
+          <span>${Math.max(0, S.bhp)} / ${b.hp} HP</span>
+        </div>
+      </div>
 
+      <div class="bt-stage ${b.aggr ? 'tele-on' : ''}">
+        <div class="bt-tele ${S.ag && S.ag.tele ? 'on' : ''}">WARNING: BOSS IS ATTACKING!</div>
+        <div id="tboss" class="boss ${S.fx ? 'hit' : ''}">
+          ${bspr(b, 140)}
+        </div>
+        <div class="sw ${S.fx ? 'go' : ''}">${svg(null, '0 0 32 66', 50, 100)}</div>
+        ${S.last ? `<div class="fl">\${S.last.d}</div>` : ''}
+        <div class="bt-ev">
+          ${S.log.slice(0, 2).map(x => `<div>\${esc(x)}</div>`).join('')}
+        </div>
+      </div>
+
+      <div class="bt-bot">
+        <div class="bt-me">
+          <b>YOU</b>
+          <div class="bt-hp me">
+            <i style="width:${Math.max(0, (S.hp/MX())*100)}%"></i>
+            <span>${Math.max(0, S.hp)} / ${MX()} HP</span>
+          </div>
+        </div>
+        <div class="bt-chips">
+          <span>ATK ${s.atk}</span>
+          <span>DEF ${s.def}</span>
+          <span>SPD ${s.spd.toFixed(1)}</span>
+          <span class="el" style="--ec:${EC[s.e]}">${s.e.toUpperCase()}</span>
+        </div>
+        <div class="bt-btns">
+          <button class="go big swing" ${S.cd || S.over ? 'disabled' : ''} onclick="atk()">
+            <span>${S.cd ? 'RECHARGING...' : 'ATTACK'}</span>
+            ${S.cd ? `<i class="cdf" style="animation-duration:\${Math.max(650, 1000/s.spd)}ms"></i>` : ''}
+          </button>
+          ${b.aggr ? `<button class="guard big" \${S.over ? 'disabled' : ''} onclick="guard()">GUARD</button>` : ''}
+          <button class="ret" onclick="retreat()">RETREAT</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
 const RL={scr:''};
 AD.cust.world=1;AD.q='';
 
