@@ -1060,18 +1060,18 @@ async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Make sure AD.who is set to the selected player or the first user in the list
-  if (!AD.who && AD.users && AD.users.length) {
-    AD.who = AD.users[0].u;
+  // Make sure AD.who isn't empty if users exist
+  if ((!AD.who || AD.who === '') && AD.users && AD.users.length > 0) {
+    AD.who = AD.users[0].u || AD.users[0].id || AD.users[0].username;
   }
 
   if (!AD.who) {
-    el.innerHTML = '<p class="fine" style="color:orange">Please select a player from the top dropdown first.</p>';
+    el.innerHTML = '<p class="fine">Loading user data…</p>';
     return;
   }
 
   try {
-    const res = await api('/api/admin/gcash-pending', { who: AD.who });
+    const res = await api('/api/admin/gcash-pending');
     const items = res.items || res;
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
