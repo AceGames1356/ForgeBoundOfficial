@@ -1056,22 +1056,30 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   render();
 }
 
-async function loadAdminGcash(){
+async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
-  if(!el) return;
-  
-  // Ensure a player is selected from the dropdown
-  if(!AD.who && AD.users && AD.users.length > 0){
-    AD.who = AD.users[0].u;
-  }
+  if (!el) return;
 
   try {
-    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who || '')}`);
+    // Try fetching global pending GCash list
+    let res;
+    try {
+      res = await api('/api/admin/gcash-pending');
+    } catch (err) {
+      // If server demands a specific player, attach who
+      if (AD.who) {
+        res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who)}`);
+      } else {
+        throw err;
+      }
+    }
+
     const items = res.items || res;
-    if(!items || !items.length){
+    if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
     }
+
     el.innerHTML = items.map(p => `
       <div style="border-bottom:1px solid #444; padding:6px 0;">
         <div><b>User:</b> ${esc(p.username || p.u || 'Unknown')}</div>
@@ -1082,7 +1090,7 @@ async function loadAdminGcash(){
         </div>
       </div>
     `).join('');
-  } catch(e) {
+  } catch (e) {
     el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
   }
 }
