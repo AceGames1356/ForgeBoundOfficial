@@ -1060,22 +1060,23 @@ async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Grab valid string username directly from state, user list, or storage
-  let validWho = '';
-  if (typeof AD !== 'undefined' && AD.who) validWho = typeof AD.who === 'string' ? AD.who : (AD.who.u || AD.who.username || '');
-  if (!validWho && typeof AD !== 'undefined' && AD.users && AD.users.length > 0) {
-    const first = AD.users[0];
-    validWho = typeof first === 'string' ? first : (first.u || first.username || first.id || '');
-  }
-  if (!validWho && typeof S !== 'undefined' && S.u) validWho = S.u;
-
-  // Assign back to AD.who to keep state synced
-  AD.who = validWho;
-
   try {
-    // Try request directly; fall back cleanly if backend rejects
-    const res = await api('/api/admin/gcash-pending');
-    const items = res.items || res;
+    // 1. Get token or auth headers if your app uses them
+    const token = localStorage.getItem('token') || localStorage.getItem('auth') || '';
+    
+    // 2. Direct fetch without passing any 'who' payload
+    const res = await fetch('/api/admin/gcash-pending', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to load GCash list');
+
+    const items = data.items || data;
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
