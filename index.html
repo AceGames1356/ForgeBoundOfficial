@@ -1060,20 +1060,18 @@ async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  try {
-    // Try fetching global pending GCash list
-    let res;
-    try {
-      res = await api('/api/admin/gcash-pending');
-    } catch (err) {
-      // If server demands a specific player, attach who
-      if (AD.who) {
-        res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who)}`);
-      } else {
-        throw err;
-      }
-    }
+  // Make sure AD.who is set to the selected player or the first user in the list
+  if (!AD.who && AD.users && AD.users.length) {
+    AD.who = AD.users[0].u;
+  }
 
+  if (!AD.who) {
+    el.innerHTML = '<p class="fine" style="color:orange">Please select a player from the top dropdown first.</p>';
+    return;
+  }
+
+  try {
+    const res = await api('/api/admin/gcash-pending', { who: AD.who });
     const items = res.items || res;
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
