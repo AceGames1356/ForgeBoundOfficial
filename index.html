@@ -1060,26 +1060,12 @@ async function loadAdminGcash(){
   const el = document.getElementById('gcashAdminList');
   if(!el) return;
 
-  // 1. Fetch user list if missing, or grab current user automatically
-  if(!AD.users || !AD.users.length){
-    try {
-      const uRes = await api('/api/admin/users');
-      AD.users = uRes.users || uRes || [];
-    } catch(e) {}
-  }
-
-  // 2. Guarantee AD.who is set to a valid player username/ID
-  if((!AD.who || AD.who === '') && AD.users && AD.users.length > 0){
-    AD.who = AD.users[0].u || AD.users[0].username || AD.users[0].id;
-  }
-
-  // 3. Fallback to logged-in user if AD.who is still blank
-  if(!AD.who && typeof S !== 'undefined' && S.u){
-    AD.who = S.u;
-  }
+  // Grab active username from state S or localStorage
+  const targetUser = AD.who || (typeof S !== 'undefined' && S.u) || localStorage.getItem('u') || '';
 
   try {
-    const res = await api('/api/admin/gcash-pending');
+    // Send who explicitly as a parameter in case the backend requires a valid admin/player ID
+    const res = await api('/api/admin/gcash-pending', { who: targetUser });
     const items = res.items || res;
     if(!Array.isArray(items) || !items.length){
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
