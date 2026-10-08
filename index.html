@@ -1059,16 +1059,25 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Temporarily set AD.who to a wildcard or admin user if empty to bypass api() injection
-  const originalWho = AD.who;
+  // Make sure AD.who is set to the current logged-in account if empty
   if (!AD.who && typeof S !== 'undefined' && S.u) {
     AD.who = S.u;
   }
 
+  // If still empty, fall back to the first loaded user or localStorage
+  if (!AD.who && AD.users && AD.users.length) {
+    const u = AD.users[0];
+    AD.who = typeof u === 'string' ? u : (u.u || u.username);
+  }
+
+  // Last fallback to local storage handle
+  if (!AD.who) {
+    AD.who = localStorage.getItem('u') || '';
+  }
+
   try {
-    // Call endpoint
-    const res = await api('/api/admin/gcash');
-    const items = res.items || res.payments || res.pending || res;
+    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who)}`);
+    const items = res.items || res;
 
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
@@ -1076,20 +1085,17 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
     }
 
     el.innerHTML = items.map(p => `
-      <div style="border-bottom:1px solid #444; padding:8px 0;">
-        <div><b>User:</b> <span style="color:#4a9eff">${esc(p.username || p.u || p.user || 'Unknown')}</span></div>
-        <div><b>Ref No:</b> ${esc(p.refNo || p.ref || 'N/A')} | <b>Pack:</b> ${esc(p.packId || p.pack || 'N/A')}</div>
-        <div style="display:flex; gap:6px; margin-top:6px;">
-          <button onclick="approveGcash('${p.id || p._id}')">Approve</button>
-          <button onclick="rejectGcash('${p.id || p._id}')">Reject</button>
+      <div style="border-bottom:1px solid #444; padding:6px 0;">
+        <div><b>User:</b> ${esc(p.username || p.u || 'Unknown')}</div>
+        <div><b>Ref:</b> ${esc(p.refNo || p.ref)} | <b>Pack:</b> ${esc(p.packId || p.pack)}</div>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <button onclick="approveGcash('${p.id}')">Approve</button>
+          <button onclick="rejectGcash('${p.id}')">Reject</button>
         </div>
       </div>
     `).join('');
   } catch (e) {
     el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
-  } finally {
-    // Restore original state if needed
-    if (!originalWho) AD.who = '';
   }
 }
 function adminH(){
