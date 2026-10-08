@@ -1055,28 +1055,23 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   AD.tab = t;
   render();
 }
-
-async function loadAdminGcash() {
+  async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  try {
-    // Try global admin endpoints that fetch ALL pending GCash submissions
-    let res;
-    try {
-      res = await api('/api/admin/gcash');
-    } catch(err) {
-      try {
-        res = await api('/api/admin/gcash-all');
-      } catch(err2) {
-        res = await api('/api/admin/pending-gcash');
-      }
-    }
+  // Temporarily set AD.who to a wildcard or admin user if empty to bypass api() injection
+  const originalWho = AD.who;
+  if (!AD.who && typeof S !== 'undefined' && S.u) {
+    AD.who = S.u;
+  }
 
+  try {
+    // Call endpoint
+    const res = await api('/api/admin/gcash');
     const items = res.items || res.payments || res.pending || res;
 
     if (!Array.isArray(items) || !items.length) {
-      el.innerHTML = '<p class="fine">No pending GCash payments from any player.</p>';
+      el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
     }
 
@@ -1084,15 +1079,17 @@ async function loadAdminGcash() {
       <div style="border-bottom:1px solid #444; padding:8px 0;">
         <div><b>User:</b> <span style="color:#4a9eff">${esc(p.username || p.u || p.user || 'Unknown')}</span></div>
         <div><b>Ref No:</b> ${esc(p.refNo || p.ref || 'N/A')} | <b>Pack:</b> ${esc(p.packId || p.pack || 'N/A')}</div>
-        <div><b>Amount:</b> ${p.amount || p.amt ? '₱' + (p.amount || p.amt) : 'N/A'}</div>
         <div style="display:flex; gap:6px; margin-top:6px;">
-          <button onclick="approveGcash('${p.id || p._id}')" style="background:#28a745; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">Approve</button>
-          <button onclick="rejectGcash('${p.id || p._id}')" style="background:#dc3545; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">Reject</button>
+          <button onclick="approveGcash('${p.id || p._id}')">Approve</button>
+          <button onclick="rejectGcash('${p.id || p._id}')">Reject</button>
         </div>
       </div>
     `).join('');
   } catch (e) {
-    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load submissions')}</p>`;
+    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
+  } finally {
+    // Restore original state if needed
+    if (!originalWho) AD.who = '';
   }
 }
 function adminH(){
