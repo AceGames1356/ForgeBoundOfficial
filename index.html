@@ -1074,7 +1074,7 @@ function adminH(){
   else if(AD.tab=='news') b=`<label>Title<input id="nt" maxlength="80"></label><label>Text<textarea id="nx" maxlength="600" rows="3"></textarea></label><button class="go" onclick="admNews()">Post announcement</button>${(NEWS?NEWS.news:[]).map(n=>`<div class="frow"><b>\${esc(n.title)}</b><button onclick="admDelNews(\${n.id})">Delete</button></div>`).join('')}`;
   else b=`<div class="rowb"><button onclick="admWorld()">Unlock World 2</button><button onclick="admAnn()">Anniversary gift</button><button onclick="admVerify()">Verify email</button></div>`;
 
-  return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('gcash','GCash')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`;
+  return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs" style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0;">${tab('give','Parts')}${tab('gcash','GCash')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`;
 }
 let currentGcashPack = null;
 
