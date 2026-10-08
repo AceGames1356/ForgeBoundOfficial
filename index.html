@@ -1059,8 +1059,14 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
 async function loadAdminGcash(){
   const el = document.getElementById('gcashAdminList');
   if(!el) return;
+  
+  // Ensure a player is selected from the dropdown
+  if(!AD.who && AD.users && AD.users.length > 0){
+    AD.who = AD.users[0].u;
+  }
+
   try {
-    const res = await api('/api/admin/gcash-pending');
+    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who || '')}`);
     const items = res.items || res;
     if(!items || !items.length){
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
