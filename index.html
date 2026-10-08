@@ -1067,33 +1067,25 @@ async function loadAdminGcash(){
   const seq=++GC_SEQ;
   el.innerHTML='<p class="fine">Loading pending GCash payments…</p>';
   let res=null,err=null;
-  const urls=['/api/admin/gcash-pending'];
-  if(AD.who)['username','who','u','user'].forEach(k=>urls.push('/api/admin/gcash-pending?'+k+'='+encodeURIComponent(AD.who)));
-  for(const u of urls){
-    try{res=await api(u);err=null;break}catch(e){err=err&&/no such player/i.test(e.message)?err:e}
-  }
-  if(seq!==GC_SEQ||!document.getElementById('gcashAdminList'))return;
+  try{res=await api('/api/admin/gcash-requests')}catch(e){err=e}
+  if(seq!==GC_SEQ)return;
   const box=document.getElementById('gcashAdminList');
+  if(!box)return;
   if(err){
     box.innerHTML=`<p class="err">Could not load payments: ${esc(err.message||'Failed to load')}</p><button onclick="loadAdminGcash()">Try again</button>`;
     return;
   }
-  let items=Array.isArray(res)?res:(res&&(res.items||res.pending||res.payments||res.list))||[];
-  if(!Array.isArray(items))items=[];
-  items=items.filter(p=>p&&(!p.status||String(p.status).toLowerCase()==='pending'));
+  const items=Array.isArray(res&&res.pending)?res.pending:[];
   if(!items.length){
     box.innerHTML='<p class="fine">No pending GCash payments.</p><button onclick="loadAdminGcash()">Refresh</button>';
     return;
   }
   box.innerHTML=items.map(p=>{
-    const pid=p.packId||p.pack||'';
-    const pk=GEM_PACKS.find(x=>x.id===pid);
-    const info=pk?`${pk.gems} gems · ₱${Math.round(pk.cents/100*58)}`:esc(pid||'Unknown pack');
-    const when=p.createdAt||p.at||p.time||p.ts;
-    const d=when?new Date(when):null;
-    const ds=d&&!isNaN(d)?d.toLocaleString():'';
+    const pk=GEM_PACKS.find(x=>x.id===p.packId);
+    const gems=p.gems||(pk&&pk.gems)||0,cents=p.cents||(pk&&pk.cents)||0;
+    const d=p.t?new Date(p.t):null,ds=d&&!isNaN(d)?d.toLocaleString():'';
     const id=encodeURIComponent(String(p.id));
-    return `<div class="gcrow"><div class="gcinfo"><b>${esc(p.username||p.u||p.user||'Unknown')}</b><span>${info}</span><span class="fine">Ref: ${esc(String(p.refNo||p.ref||'-'))}${ds?' · '+esc(ds):''}</span></div><div class="gcbtn"><button class="go sm" onclick="approveGcash(decodeURIComponent('${id}'))">Approve</button><button class="sm" onclick="rejectGcash(decodeURIComponent('${id}'))">Reject</button></div></div>`;
+    return `<div class="gcrow"><div class="gcinfo"><b>${esc(p.user||'Unknown')}</b><span>${gems} gems · ₱${Math.round(cents/100*58)}</span><span class="fine">Ref: ${esc(String(p.ref||'-'))}${ds?' · '+esc(ds):''}</span></div><div class="gcbtn"><button class="go sm" onclick="approveGcash(decodeURIComponent('${id}'))">Approve</button><button class="sm" onclick="rejectGcash(decodeURIComponent('${id}'))">Reject</button></div></div>`;
   }).join('')+'<button style="margin-top:8px" onclick="loadAdminGcash()">Refresh</button>';
 }
 function adminH(){
@@ -1154,7 +1146,7 @@ async function submitGcashModal() {
 async function approveGcash(id) {
   if (!confirm('Approve this GCash payment?')) return;
   try {
-    await api('/api/admin/gcash-approve', { id });
+    await api('/api/admin/gcash-confirm', { requestId: id });
     toast('Payment approved.');
     loadAdminGcash();
   } catch(e) {
@@ -1165,7 +1157,7 @@ async function approveGcash(id) {
 async function rejectGcash(id) {
   if (!confirm('Reject this GCash payment?')) return;
   try {
-    await api('/api/admin/gcash-reject', { id });
+    await api('/api/admin/gcash-reject', { requestId: id });
     toast('Payment rejected.');
     loadAdminGcash();
   } catch(e) {
