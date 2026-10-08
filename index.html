@@ -297,6 +297,26 @@ button.sm{padding:6px 12px;width:auto!important;font-size:.85rem;flex:none}
 .tc b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.tc.me{border-color:var(--acc)}.tc.dn{opacity:.5}.tc small{color:var(--mut)}
 @media(prefers-reduced-motion:reduce){.cdf{animation:none!important;width:100%}}
 </style></head><body><div id="shell"><div id="tbar"></div><main id="app"></main><nav id="nav"></nav></div><div id="modal"></div><div id="ver"></div>
+
+<div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
+  <div class="dlg" style="text-align:center;">
+    <h2 style="color:var(--acc); margin-bottom:4px;">Pay with GCash</h2>
+    <div style="background:var(--bg2); border:3px solid var(--px); padding:10px; margin:8px 0; text-align:center;">
+      <p style="margin:2px 0; font-size:0.85rem;">Scan QR to send <b id="gcashPrice" style="color:var(--good);">₱0</b></p>
+      <img src="qr-code.png" alt="GCash QR Code" style="width:180px; height:auto; border:3px solid var(--px); margin:8px auto; display:block; background:#fff;">
+      <p style="margin:2px 0; font-size:0.8rem; color:var(--tx);">Account Name: <b>NI******S J** G.</b></p>
+      <p style="margin:2px 0; font-size:0.75rem; color:var(--mut);">Mobile: <b>0962 262 ****</b></p>
+    </div>
+    <label style="text-align:left; font-size:0.8rem; display:block; margin-bottom:4px;">
+      Paste GCash Reference No. (8-13 digits):
+      <input type="text" id="gcashRefInput" maxlength="13" placeholder="e.g. 1001234567890" style="margin-top:4px;">
+    </label>
+    <div id="gcashErr" class="err" style="margin-top:4px;"></div>
+    <button class="go" onclick="submitGcashModal()" style="margin-top:6px;">Submit Payment</button>
+    <button onclick="closeGcashModal()" style="margin-top:6px; width:100%; text-align:center;">Cancel</button>
+  </div>
+</div>
+
 <script>
 (function(root){
 const P=[
@@ -453,8 +473,7 @@ const PATCH_NOTES=[
 const api={SLOTS,W1BASE,W2BASE,FX,GEM_PACKS,PATCH_NOTES,VERSION,WORLD2,PRICE2,CAP2,MG_UNLOCK,dropPool2,annYear,ANN,hpCostD,recoil,BOSSES,RN,CAP,dropPool,towerPool,addCustom,PRICE,BOSS_COIN,hpCost,maxHp,P,SB,TW,DEFAULT_EQ,stats,bossFor,dmg,validEq};
 if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.Game=api;
 })(typeof window!=='undefined'?window:globalThis);
-</script>
-<script>
+
 const EC={fire:'#ff7a3d',ice:'#7fd6ff',shock:'#ffe14d',blood:'#e0345a',void:'#a66bff',toxic:'#7be04f',holy:'#ffffff',none:'#8a8f99'};
 const TC=['#63d99a','#4fd6d6','#5aa9e6','#b07cf0','#ffb347','#ff3b3b','#ffffff','#7fe8ff'];
 const {P,SB,TW,PRICE,BOSS_COIN,RN,BOSSES,WORLD2,PRICE2,MG_UNLOCK,VERSION,SLOTS,W1BASE,W2BASE,FX,GEM_PACKS,PATCH_NOTES}=Game;
@@ -470,7 +489,7 @@ function closeM(){document.getElementById('modal').innerHTML=''}
 function setMode(m){MODE=m;drawM()}
 
 function st(){let o={atk:0,spd:1,def:0,crit:0,life:0,e:'none'};
-for(const k in S.eq){const p=P[S.eq[k]];o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}
+for(const k in S.eq){const p=P[S.eq[k]];if(p){o.atk+=p.atk||0;o.spd+=p.spd||0;o.def+=p.def||0;o.crit+=p.crit||0;o.life+=p.life||0;if(p.e)o.e=p.e}}
 o.spd=Math.max(.3,o.spd);return o}
 const W=(n,m,t)=>Array.from({length:n},(_,i)=>i<t?Math.max(1,Math.ceil(m*(i+1)/t)):m);
 const BW={'Rust Blade':W(24,3,4),'Steel Edge':W(28,3,5),'Rapier':W(32,1,3),'Cleaver':W(22,5,2),'Reaper Scythe':[5,5,4,4,4,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],'Glass Fang':[1,1,2,2,3,3,3,3,3,3,2,2,2,2,2,2,1,1,1,1,1,1,1,1],'Greatblade':W(34,6,5)};
@@ -542,6 +561,7 @@ S.agT=setTimeout(()=>{if(S.scr!='fight'||!S.ag||S.over)return;agHit(b);if(S.scr=
 function agHit(b){const s=st(),g=Date.now()<S.ag.guard,dm=Math.max(1,Math.round(Game.recoil(b.aggr.pw,s.def,b.fl)*(g?.3:1)));S.hp-=dm;
 S.log.unshift(g?`You guard ${b.n}'s attack and take ${dm}.`:`${b.n} strikes you for ${dm}!`);(g?sfx.block:sfx.hurt)();if(S.hp<=0){S.hp=0;fupd();loseFight(b)}else fupd()}
 function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.now()+900;S.ag.gcd=Date.now()+1700;sfx.guard();fupd();setTimeout(fupd,1750)}
+function fupd(){if(S.scr=='fight')render()}
 
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
 function skip(){advance()}
@@ -589,7 +609,6 @@ function adTab(k){AD.tab=k;render()}
 
 function opt(k,label,vals){return `<div class="orow"><span>${label}</span><div class="tabs">${vals.map(([v,n])=>`<button class="${CF[k]==v?'on':''}" onclick="setOpt('${k}',${JSON.stringify(v).replace(/"/g,"'")})">${n}</button>`).join('')}</div></div>`}
 
-/* ---------- World 2: map, cutscene, minigames, gifts ---------- */
 let MAPIMG=null;
 function genMap(){if(MAPIMG)return MAPIMG;const Wd=96,Ht=60,cv=document.createElement('canvas');cv.width=Wd;cv.height=Ht;const g=cv.getContext('2d');
 let sd=7;const rn=()=>{sd=(sd*16807)%2147483647;return sd/2147483647},lat=Array.from({length:150},rn),sm=t=>t*t*(3-2*t),LT=(a,b)=>lat[(b*14+a)%150];
@@ -628,7 +647,7 @@ if(sel){if(sel.t=='M'){const id=['maze','dodge','hunt'][sel.i],m=MGI[id];det=`<h
 else{const b=wv==1?B[sel.i]:WORLD2[sel.i],w2=wv==2,state=wv==1?(S.world==2||sel.i<S.boss?'Defeated':sel.i==S.boss?'Next boss':'Not reached yet'):(!S.cl1?'Not reached yet':sel.i<S.b2?'Defeated':sel.i==S.b2?'Next boss':'Not reached yet');
 det=`<div class="row"><div>${w2?sprG(w2g(sel.i),72,b.n):spr(sel.i,72)}</div><div><h2>${b.n}</h2><p>${state}</p></div></div><p>${b.hp} HP. Recoil ${b.r} per swing. Weak to ${b.w}.${b.aggr?' He fights back with timed attacks: use Guard.':''}</p><p>Reward: ${w2?b.coin+' coins, '+b.dia+' diamonds':BOSS_COIN[sel.i]+' coins'} and a part.</p>${fightBtn(wv,sel.i)}`}}
 return `<div class="box"><h2>Boss map</h2>${two?`<div class="tabs"><button class="${wv==1?'on':''}" onclick="mworld(1)">World 1</button><button class="${wv==2?'on':''}" onclick="mworld(2)">World 2</button></div>`:'<p>Something lies beyond the sea. Defeat The Final God to find out.</p>'}<div class="mapbox" id="mapbox" data-fx="${foc.x/96*100}" data-fy="${foc.y/60*100}">${inner}</div><button style="width:100%;margin-top:8px;text-align:center" onclick="S.mz=${Z==3?1:3};render()">${Z==3?'Zoom out (see the whole map)':'Zoom in (easier to tap)'}</button><div class="box" style="margin-top:10px">${det}</div><button style="width:100%;margin-top:10px;text-align:center" onclick="S.scr='${S.cl1&&S.world==2?'forge':'forge'}';render()">Back to forge</button></div>`}
-/* cutscene */
+
 let CUTT=[];
 function cutH(){return `<div class="cut"><div class="cutm"><div class="zoomer" id="zm" style="transform:scale(5)"><img class="mapimg" src="${genMap()}" alt="The world map"></div></div><div class="cutc" id="cutc" role="status"></div><div class="cutb"><button onclick="cutDone()">Skip</button><button class="go" id="cutgo" style="display:none;width:auto;padding:12px 24px" onclick="cutDone()">Enter World 2</button></div></div>`}
 function startCut(){const z=document.getElementById('zm'),c=document.getElementById('cutc'),go=document.getElementById('cutgo');if(!z)return;CUTT.forEach(clearTimeout);CUTT=[];sfx.rumble();
@@ -639,7 +658,7 @@ function cutDone(){CUTT.forEach(clearTimeout);CUTT=[];S.scr='forge';render()}
 function end2H(){return `<div class="box" style="max-width:560px;margin:0 auto"><h2>ViLocity is defeated!</h2><p>The Shattered Lands are free. You conquered both worlds (clears: ${S.clears}).</p><div class="hero">${bspr({w2:1,i:20,n:'ViLocity'},96)}</div><p>Keep playing: minigames still earn diamonds and the shops are open. Or press New run in the forge to start over.</p><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div>`}
 
 function showGift(g){GIFT=null;sfx.gift();const ps=(g.parts||[]).map(id=>P[id]).filter(Boolean);document.getElementById('modal').innerHTML=`<div class="ov"><div class="dlg" role="dialog" aria-modal="true" aria-label="Anniversary gift"><h2>Happy Anniversary!</h2><p>Thanks for playing Forgebound. Your gift: <b>${g.coins}</b> coins and <b>${g.dia}</b> diamonds, plus these parts that stay with you forever, even after New run.</p><div class="parts" style="grid-template-columns:1fr">${ps.map(p=>`<div class="part" style="--tc:${TC[p.t]}">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></div>`).join('')}</div><button class="go" onclick="closeM()">Awesome</button></div></div>`}
-/* top-down minigames */
+
 const TL=24,GW=15,GH=13;
 const MGI={maze:{n:'Gem Maze',d:'Collect all 8 gems in the maze before time runs out. Slimes cost you 5 seconds.',unlock:0},dodge:{n:'Ember Dodge',d:'Survive 30 seconds of fireballs and grab the diamonds.',unlock:1},hunt:{n:'Slime Hunt',d:'Slash 15 slimes in 45 seconds. Press A to swing.',unlock:2}};
 const mgOK=id=>S.world==2&&S.b2>=MG_UNLOCK[MGI[id].unlock];
@@ -702,7 +721,6 @@ draw(cx){drawFloor(cx,Wg);sl.forEach(e=>dS(cx,'slime',e.x,e.y,3));if(!(p.inv&&Ma
 if(p.sw>0){cx.fillStyle='#fff';for(let a=-1;a<=1;a++){const px=p.x+p.fx*26+(-p.fy)*a*10,py=p.y+p.fy*26+p.fx*a*10;cx.fillRect(Math.round(px)-3,Math.round(py)-3,6,6)}}},
 hud(){return `Hearts ${s.hp}   Slimes ${s.k}/15   Time ${Math.max(0,Math.ceil(s.t))}`}}}};
 
-/* ================= v3 layer ================= */
 const IC={forge:["...xx...","...xx...","...xx...","xxxxxxxx",".yyyyyy.","..yyyy..","..yyyy..",".yyyyyy."],
 map:["xxxxxxxx","x.y..y.x","x..yy..x","x.y..y.x","x..yy..x","x.y..y.x","x......x","xxxxxxxx"],
 shop:["..xxxx..",".x....x.","xxxxxxxx","xyyyyyyx","xyyxxyyx","xyyyyyyx","xyyyyyyx","xxxxxxxx"],
@@ -755,7 +773,6 @@ S.owned=[...new Set([...W1BASE,...perm.filter(i=>!P[i].wd)])];S.oa=[...new Set([
 if(USER){try{const j=await api('/api/save',{reset:1});(j.customs||[]).forEach(Game.addCustom);applySave(j.save)}catch(e){STATE='save failed'}}render()}
 function reset(){if(!S.rs){S.rs=true;render();return}doReset()}
 
-/* ----- accounts ----- */
 function setUser(j){USER={u:j.user.username,name:j.user.name,verified:j.user.verified,needsInfo:j.user.needsInfo,age:j.user.age,caps:j.user.caps||{}}}
 function afterAuth(j){TOKEN=j.token;localStorage.setItem('fb:token',TOKEN);setUser(j);(j.customs||[]).forEach(Game.addCustom);applySave(j.save);GIFT=j.gift||null;S.dailyReady=!!j.dailyReady}
 async function connect(){loadNews();
@@ -788,7 +805,6 @@ async function loadNews(){try{const r=await fetch('/api/news');NEWS=await r.json
 function newsKey(){return NEWS?(NEWS.news[0]?NEWS.news[0].id:0)+'|'+NEWS.version:''}
 function newsUnread(){return NEWS&&localStorage.getItem('fb:news')!==newsKey()}
 
-/* ----- palettes, effects ----- */
 const PAL={aurora:{d:{bg:'#0d1322',bg2:'#172038',panel:'#121a30',line:'#2a3a66',tx:'#e6efff',mut:'#8fa4d0',acc:'#4de0c1',acc2:'#7a6cff',ink:'#042019',px:'#03060d'},l:{bg:'#e9f1fb',bg2:'#d9e6f6',panel:'#fbfdff',line:'#b7c9e6',tx:'#13203c',mut:'#546a92',acc:'#079a7f',acc2:'#5646dc',ink:'#ffffff',px:'#13203c'}},
 ember:{d:{bg:'#0f121a',bg2:'#1a1f2e',panel:'#171c29',line:'#2c3448',tx:'#eceff6',mut:'#8f9ab2',acc:'#ffb347',acc2:'#ff6b3d',ink:'#1a1206',px:'#05060a'},l:{bg:'#f1eee8',bg2:'#e6e1d8',panel:'#fffdf9',line:'#d3cbbd',tx:'#211d17',mut:'#6d655a',acc:'#c7710a',acc2:'#b3400f',ink:'#ffffff',px:'#241a0e'}},
 ocean:{d:{bg:'#07161f',bg2:'#0e2733',panel:'#0b1f2a',line:'#1d4558',tx:'#e3f6ff',mut:'#7fb0c8',acc:'#38c6ff',acc2:'#2f7dff',ink:'#02141d',px:'#020b10'},l:{bg:'#e6f4fa',bg2:'#d2e8f2',panel:'#f8fcff',line:'#a9cde0',tx:'#0d2a38',mut:'#4a7a92',acc:'#0786c2',acc2:'#1d5fd0',ink:'#ffffff',px:'#0d2a38'}},
@@ -797,11 +813,9 @@ royal:{d:{bg:'#14091f',bg2:'#21123a',panel:'#1b0f30',line:'#43286e',tx:'#f1e9ff'
 candy:{d:{bg:'#1f0d1a',bg2:'#331429',panel:'#2a1022',line:'#5e2a4d',tx:'#ffeaf6',mut:'#d69ac0',acc:'#ff7ac8',acc2:'#ffd23f',ink:'#2d0620',px:'#0f040b'},l:{bg:'#fdeef7',bg2:'#f9dcee',panel:'#fffafd',line:'#efbad8',tx:'#4a1236',mut:'#a85a88',acc:'#e0319c',acc2:'#e08a00',ink:'#ffffff',px:'#4a1236'}}};
 function applySet(){const dk=CF.theme=='dark'||(CF.theme!='light'&&window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches),p=(PAL[CF.pal]||PAL.aurora)[dk?'d':'l'],r=document.documentElement;for(const k in p)r.style.setProperty('--'+k,p[k]);r.style.setProperty('--bad',dk?'#ff5a6a':'#c22f40');r.style.setProperty('--good',dk?'#63d99a':'#1f8a55');r.classList.toggle('noanim',!CF.anim);r.removeAttribute('data-theme')}
 function fxCol(){const f=FX.find(x=>x.id==S.fx);return f?f.c:''}
-const fxc=c=>fxCol()||c;
 function aura(){const c=fxCol();return c?`filter:drop-shadow(0 0 7px ${c}) drop-shadow(0 0 14px ${c})`:''}
 function ico(p,hh){const E={h:0,b:6,g:13,c:18};E[p.s]=p.id;const v=VB[p.s][0],H=hh||(p.s=='b'||p.s=='h'?52:34),hv=p.s=='b'||p.s=='h'?H:Math.round(H*.7);return svg(E,v.join(' '),Math.round(hv*v[2]/v[3]),hv)}
 
-/* ----- shell: top bar, navigation ----- */
 function head(){const chips=`<span class="chip" title="Coins"><span class="coin"></span>${S.coins||0}</span>${S.cl1?`<span class="chip" title="Diamonds"><span class="dia"></span>${S.dia||0}</span>`:''}${USER?`<span class="chip" title="Gems"><span class="gm"></span>${S.gems||0}</span>`:''}${STATE?`<span class="chip bad">${STATE}</span>`:''}`;
 const acct=USER?`<button class="avb" onclick="openAcct()" aria-label="Account">${esc((USER.name[0]||'?').toUpperCase())}${USER.verified?'':'<i class="wdot"></i>'}</button>`:`<button class="avb" onclick="openM()" aria-label="Log in or create account">${ic('user',20)}</button>`;
 return `<div class="tb"><button class="logo" onclick="S.scr='home';render()" aria-label="Home">${ic('home',18)}<b>${S.cl1?'W'+S.world:'FB'}</b></button><div class="chips">${chips}</div>${acct}</div>`}
@@ -810,11 +824,9 @@ const NAVS=['forge','map','shop','friends','news','settings','help','admin','min
 function navH(){return NAVI.map(([s,l,i])=>`<button class="nb ${S.scr==s?'on':''}" onclick="go('${s}')">${ic(i,22)}<span>${l}</span>${s=='news'&&newsUnread()?'<i class="nbd"></i>':''}</button>`).join('')}
 function go(s){S.scr=s;render()}
 
-/* ----- home ----- */
 function homeH(){const ann=Game.annYear(Date.now()),b=(i,l,f,x)=>`<button class="hb" onclick="${f}">${ic(i,30)}<span>${l}</span>${x||''}</button>`;
 return `<div class="home"><div class="ttl">FORGEBOUND</div><div class="sub">Forge. Fight. Cross two worlds.</div><div class="hero">${svg(null,'0 0 32 66',56,116)}</div>${ann?'<div class="ann">Anniversary event! Free gifts that stay forever.</div>':''}${S.dailyReady?`<button class="daily" onclick="claimDaily()">${ic('gift',18)} Daily reward ready</button>`:''}<div class="igrid">${b('play','Play',"S.scr='forge';render()")}${b('coop','Co-op',"S.scr='lobby';S.sub='menu';render()")}${b('map','Map',"S.scr='map';render()")}${b('shop','Shop',"S.scr='shop';render()")}${b('friends','Friends',"go('friends')")}${b('news','News',"go('news')",newsUnread()?'<i class="nbd"></i>':'')}${b('help','Help',"S.scr='help';render()")}${b('gear','Settings',"S.scr='settings';render()")}${USER&&USER.u==='vilocity'?b('crown','Admin','openAdmin()'):b('gem','Gems',"S.shopc='g';S.scr='shop';render()")}</div></div>`}
 
-/* ----- forge (compact) ----- */
 function forgeBossH(){const b=nextBoss(),oth=S.world==2?1:2;let h='<div class="bcard">';
 if(b)h+=`<div class="bc1"><span class="bsp">${bspr(b,38)}</span><div class="bt"><b>${S.world==2?'W2 · ':''}${esc(b.n)}</b><small>${b.hp} HP · recoil ${b.r} · weak to ${b.w}${b.aggr?' · fights back':''}</small></div><button class="go sm" onclick="start()">Fight</button></div>`;
 else h+=`<div class="bc1"><div class="bt"><b>World ${S.world} complete</b><small>Repeat bosses from the Map for half rewards.</small></div></div>`;
@@ -826,7 +838,6 @@ return `<div class="fg"><div class="fpv" style="--glow:${EC[s.e]}">${svg(null,'0
 <div class="tiles">${all.map(p=>`<button class="tile ${S.eq[t]==p.id?'on':''}" style="--tc:${TC[p.t]}" onclick="eq(${p.id})" aria-label="${esc(p.n)}">${ico(p,40)}<small>${esc(p.n)}</small></button>`).join('')}</div>
 <div class="det" style="--tc:${TC[dp.t]}"><b>${esc(dp.n)}</b> <span>${desc(dp)}</span></div>${forgeBossH()}`}
 
-/* ----- shop ----- */
 const ownedAny=id=>S.owned.includes(id)||S.oa.includes(id)||S.gl.includes(id);
 function buy(id){const p=P[id];if(ownedAny(id)||p.cu||p.an||p.gl||p.st)return;const d=!!p.wd,pr=d?PRICE2[p.t]:PRICE[p.t];if(pr==null)return;if((d?S.dia:S.coins)<pr){sfx.deny();return}if(d)S.dia-=pr;else S.coins-=pr;(d==(S.world==2)?S.owned:S.oa).push(id);sfx.buy();toast('Bought '+p.n);S.sel=0;save();render()}
 const hpOf=w=>S.world==w?S.hpup:S.hpa;
@@ -886,7 +897,6 @@ async function buyGem(id){try{const j=await api('/api/gems/buy',{kind:'item',id}
 async function buyFx(id){try{const j=await api('/api/gems/buy',{kind:'fx',id});adoptGem(j.save);sfx.buy();toast('Effect unlocked')}catch(e){toast(e.message);sfx.deny()}}
 function equipFx(id){S.fx=id;sfx.equip();save();render()}
 
-/* ----- rewards, settings, news, help ----- */
 function overH(){return `<div class="box"><h2>Recoil beat you.</h2><p>You earned ${S.gain} coins${S.gdia?` and ${S.gdia} diamonds`:''} for the damage you dealt. Spend them in the shop, then try again.</p><div class="btnrow"><button onclick="S.scr='shop';render()">Shop</button><button class="go" onclick="S.scr='forge';render()">Back to forge</button></div></div>`}
 function rewardH(){const b=cb(),rep=isRep();return `<div class="box"><h2>${b.n} defeated.</h2><p>+${S.gain} coins${S.gdia?` and +${S.gdia} diamonds`:''}${rep?' (repeat fight: half rewards)':''}. Choose one part.</p><div class="parts">`+S.rew.map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="take(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button onclick="skip()">Skip reward</button></div>`}
 function settingsH(){return `<div class="box"><h2>Settings</h2>${opt('snd','Sound effects',[[1,'On'],[0,'Off']])}${opt('vol','Volume',[['low','Low'],['med','Mid'],['high','High']])}${opt('anim','Animations',[[1,'On'],[0,'Off']])}${opt('theme','Theme',[['auto','Auto'],['dark','Dark'],['light','Light']])}${opt('pal','Colors',[['aurora','Aurora'],['ember','Ember'],['ocean','Ocean'],['forest','Forest'],['royal','Royal'],['candy','Candy']])}<div class="rowb"><button onclick="S.scr='help';render()">How to play</button>${USER?'<button onclick="openAcct()">Account</button>':'<button onclick="openM()">Log in</button>'}${USER&&USER.u==='vilocity'?'<button onclick="openAdmin()">Admin</button>':''}</div><div class="danger"><button onclick="reset()">${S.rs?'Tap again: erase this run':'New run'}</button><small>New run resets parts, coins, diamonds and progress in both worlds. Prism items, effects, anniversary items and records stay.</small></div><p class="fine">Forgebound v${VERSION}</p></div>`}
@@ -897,7 +907,6 @@ return `<h3>Announcements</h3>${an}<h3>Patch notes</h3>${pn}<h3>Tower leaderboar
 async function loadTop(){try{const r=await fetch('/api/top'),j=await r.json(),e=document.getElementById('lbd');if(e)e.innerHTML=j.top.length?j.top.map((x,i)=>`<div class="lbr"><b>${i+1}</b><span>${esc(x.name)}</span><em>floor ${x.tb}</em></div>`).join(''):'No scores yet. Be the first to climb the tower.'}catch(e){}}
 function helpH(){return `<div class="box"><h2>How to play</h2><ul class="hl"><li><b>Forge:</b> equip a handle, blade, guard and core. Each part changes your stats.</li><li><b>Fight:</b> every swing hurts the boss and costs you HP from recoil. Defense and lifesteal soften that. Hit a boss's weak element for big damage.</li><li><b>Rewards:</b> beat a boss for coins (and diamonds in World 2) and pick a new part.</li><li><b>Two worlds:</b> each world has its own gear, shop and health upgrades. Travel between them from the Forge. Repeat any beaten boss for half rewards.</li><li><b>ViLocity:</b> he attacks on a timer. Press Guard when he winds up.</li><li><b>Co-op tower:</b> climb floors with friends using World 1 gear (age 8+).</li><li><b>Friends:</b> add friends, chat and trade parts (age 13+). Parts only trade inside their own world.</li><li><b>Gems:</b> bought with real money. Prism items and effects work in both worlds and stay after New run.</li></ul><button style="width:100%;margin-top:8px;text-align:center" onclick="S.scr='forge';render()">Back</button></div>`}
 
-/* ----- co-op fixes ----- */
 const NOLOGIN='Log in or create an account first. Co-op uses your account so the server knows your weapon.';
 let T=null,R=null,ES=null;
 const me=()=>R&&R.players.find(p=>p.u===USER.u)||{hp:100,dead:0,dealt:0,nm:'',eq:S.eq};
@@ -935,6 +944,7 @@ function animate(ev){(ev.t?sfx.crit:sfx.hit)();if(ev.by===USER.u){T.last=ev;T.fx
 function rswing(k,p){const el=document.getElementById('tsw'+k);if(el){el.classList.remove('go');void el.offsetWidth;el.classList.add('go')}
 const sg=document.getElementById('tst');if(sg){const d=document.createElement('div');d.className='slash';d.style.setProperty('--sc',EC[P[p.eq.c].e]);sg.appendChild(d);setTimeout(()=>d.remove(),700)}
 const bo=document.getElementById('tboss');if(bo){bo.classList.remove('hit');void bo.offsetWidth;bo.classList.add('hit')}}
+function tupd(){if(S.scr=='tower')render()}
 
 function waitH(){const isH=R.host===USER.u,ps=[...R.players].sort((a,b)=>(b.u===R.host)-(a.u===R.host));
 const sl=Array.from({length:R.cap},(_,i)=>{const p=ps[i];return p?`<div class="ws">${svg(p.eq,'0 0 32 66',60,124)}<b>${esc(p.nm)}${p.u===USER.u?' (you)':''}</b><small>${p.u===R.host?'Host':p.off?'Offline':'Ready'}</small></div>`:`<div class="ws em"><span>Waiting…</span></div>`}).join('');
@@ -944,12 +954,63 @@ function startTower(){api('/api/room/start',{}).catch(e=>LE(e.message))}
 function tatk(){if(!T||T.cd||R.phase!='fight'||me().dead)return;T.cd=1;T.cdu=Date.now()+cdMs();tbtn();clearTimeout(T.cdt);T.cdt=setTimeout(()=>{if(T){T.cd=0;tbtn()}},cdMs());
 api('/api/room/swing',{}).catch(()=>{if(T){T.cd=0;clearTimeout(T.cdt);tbtn()}})}
 
+function towerH(){
+  if(!R) return '<div class="box"><p>Connecting to tower room...</p></div>';
+  const b = R.boss, m = me(), s = st(), v = view();
+  const slots = v.map((p, i) => {
+    const pos = i === 0 ? 'left:10%;bottom:10px;' : i === 1 ? 'right:10%;bottom:10px;' : i === 2 ? 'left:25%;bottom:40px;' : 'right:25%;bottom:40px;';
+    return `<div class="slot ${p.dead ? 'dd' : ''}" style="${pos}">
+      <div id="tsw${i}" class="tsw" style="--d:${i % 2 === 0 ? 1 : -1}">${svg(p.eq, '0 0 32 66', 48, 96)}</div>
+      <div class="tag">${esc(p.nm)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="bt-scene">
+      <div class="bt-top">
+        <div class="bt-name">
+          <b>FLOOR ${R.floor}: ${esc(b.n)}</b>
+          <span class="wk" style="--ec:${EC[b.w]}">WEAK: ${b.w.toUpperCase()}</span>
+        </div>
+        <div class="bt-hp">
+          <i style="width:${Math.max(0, (b.hp / b.hp0) * 100)}%"></i>
+          <span>${Math.max(0, b.hp)} / ${b.hp0} HP</span>
+        </div>
+      </div>
+
+      <div class="bt-stage tw" id="tst">
+        <div id="tboss" class="boss ${T && T.fx ? 'hit' : ''}">
+          ${spr(b.i, 140, b.set)}
+        </div>
+        ${slots}
+        ${T && T.last ? `<div class="fl">${T.last.d}</div>` : ''}
+      </div>
+
+      <div class="bt-bot">
+        <div class="team2">
+          ${v.map(p => `<div class="tc ${p.u === USER.u ? 'me' : ''} ${p.dead ? 'dn' : ''}">
+            <b>${esc(p.nm)}</b>
+            <div class="bt-hp sm"><i style="width:${Math.max(0, p.hp)}%"></i></div>
+            <small>${p.dead ? 'DOWN' : p.hp + '%'}</small>
+          </div>`).join('')}
+        </div>
+        <div class="bt-btns">
+          <button class="go big swing" ${T && T.cd || m.dead ? 'disabled' : ''} onclick="tatk()">
+            <span>${m.dead ? 'DOWN' : T && T.cd ? '...' : 'SWING'}</span>
+            ${T && T.cd ? `<i class="cdf" style="animation-duration:${cdMs()}ms"></i>` : ''}
+          </button>
+          <button class="ret" onclick="tleave()">LEAVE</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function trewH(){const m=me();return `<div class="box"><h2>Floor ${R.floor} cleared${R.boss.sp?': special boss down!':'.'}</h2>`+(m.picked?`<p>Waiting for teammates to pick…</p>`:`<p>Choose a part. You earned ${R.gain} coins. Your team climbs to floor ${R.floor+1} when everyone has picked.</p><div class="parts">`+R.rew.map(id=>P[id]).map(p=>`<button class="part" style="--tc:${TC[p.t]}" onclick="ttake(${p.id})">${ico(p)}<span>${SL[p.s]}: ${p.n}<small>${desc(p)}</small></span></button>`).join('')+`</div><button class="go" onclick="ttake(-1)">${R.rew.length?'Skip reward and climb':'Climb'}</button>`)+`</div>`}
 function ttake(id){api('/api/room/reward',{id}).then(j=>{if(S.world==1){S.owned=j.owned;S.rev=j.rev|0}}).catch(()=>{})}
 function toverH(){return `<div class="box" style="max-width:520px;margin:0 auto"><h2>Your team fell on floor ${R.floor}.</h2><p>Best floor: ${S.tb||0}. Rebuild your weapon and climb again.</p><button class="go" onclick="tleave()">Back to forge</button></div>`}
 function tleave(){api('/api/room/leave',{}).catch(()=>{});closeRoom();S.scr='forge';render()}
 
-/* ----- friends, chat, trading ----- */
 const FR={tab:'list',friends:[],inc:[],out:[],trades:[],chat:null,msgs:[],tr:null,err:'',timer:0};
 function friendsH(){if(!USER)return `<div class="box"><h2>Friends</h2><p>Log in to add friends, chat and trade.</p><button class="go" onclick="openM()">Log in</button></div>`;
 if(!USER.caps.social)return `<div class="box"><h2>Friends</h2><p>Friends, chat and trading need a verified email and age 13 or older.</p>${USER.verified?'':'<button class="go" onclick="openVerify()">Enter verification code</button>'}</div>`;
@@ -981,7 +1042,6 @@ function frPick(side,id){const a=FR.tr[side],i=a.indexOf(id);if(i>=0)a.splice(i,
 async function frSendTrade(){const t=FR.tr;try{await api('/api/trade/offer',{to:t.to,world:t.world,give:t.give,want:t.want});FR.tr=null;FR.tab='trade';toast('Offer sent');sfx.buy();render()}catch(e){toast(e.message);sfx.deny()}}
 async function frTr(a,id){try{const j=await api('/api/trade/'+a,{id});if(a=='accept'){adopt(j.save);sfx.buy();toast('Trade complete!')}frRefresh();render()}catch(e){toast(e.message);frRefresh()}}
 
-/* ----- admin ----- */
 function admW(p){const w=AD.wf;return w=='all'||(w=='1'&&!p.wd&&!p.an&&!p.gl)||(w=='2'&&p.wd&&!p.an)||(w=='an'&&p.an)||(w=='gl'&&p.gl)}
 function admTiles(){const q=(AD.q||'').toLowerCase();return P.filter(p=>!p.cu&&p.s==AD.fs&&admW(p)&&(!q||p.n.toLowerCase().includes(q))).sort((a,b)=>a.t-b.t||a.n.localeCompare(b.n)).map(p=>`<button class="tile" style="--tc:${TC[p.t]}" onclick="admGive(${p.id})" aria-label="${esc(p.n)}">${ico(p,34)}<small>${esc(p.n)}</small></button>`).join('')}
 function admList(){const e=document.getElementById('admtiles');if(e)e.innerHTML=admTiles()}
@@ -996,7 +1056,7 @@ function adminH(){
   let b;
   const tab=(k,l)=>`<button class="${AD.tab==k?'on':''}" onclick="adTab('${k}')">${l}</button>`;
 
-  if(AD.tab=='give') b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
+  if(AD.tab=='give') b=`<div class="tabs t4">${[['h','Handle'],['b','Blade'],['g','Guard'],['c','Core']].map(([k,n])=>`<button class="\${AD.fs==k?'on':''}" onclick="AD.fs='${k}';render()">${n}</button>`).join('')}</div><div class="tabs t5">${[['all','All'],['1','W1'],['2','W2'],['an','Anniv'],['gl','Prism']].map(([k,n])=>`<button class="\${AD.wf==k?'on':''}" onclick="AD.wf='${k}';render()">${n}</button>`).join('')}</div><input class="srch" placeholder="Search" value="${esc(AD.q||'')}" oninput="AD.q=this.value;admList()"><div class="tiles tl2" id="admtiles">${admTiles()}</div>`;
   else if(AD.tab=='gcash') {
     b = `
       <h3>Pending GCash Payments</h3>
@@ -1017,16 +1077,13 @@ function adminH(){
   return `<div class="box"><h2>Admin panel</h2>${u}<div class="tabs t5">${tab('give','Parts')}${tab('gcash','GCash')}${tab('custom','Custom')}${tab('coins','Money')}${tab('news','News')}${tab('prog','More')}</div>${b}<p class="admmsg" role="status">${esc(AD.msg)}</p><button style="width:100%;text-align:center" onclick="S.scr='settings';render()">Back</button></div>`;
 }
 
-// ----- GCash Client Logic -----
 let currentGcashPack = null;
 
 function checkout(packId) {
   const pack = GEM_PACKS.find(p => p.id === packId);
   if (!pack) return;
-
   currentGcashPack = packId;
   const phpPrice = '₱' + Math.round((pack.cents / 100) * 58); 
-  
   document.getElementById('gcashPrice').textContent = `${phpPrice} (${pack.gems} Gems)`;
   document.getElementById('gcashRefInput').value = '';
   document.getElementById('gcashErr').textContent = '';
@@ -1041,14 +1098,11 @@ function closeGcashModal() {
 async function submitGcashModal() {
   const refNo = document.getElementById('gcashRefInput').value.trim();
   const errEl = document.getElementById('gcashErr');
-  
   if (!/^\d{8,13}\$/.test(refNo)) {
     errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
     return;
   }
-
   errEl.textContent = 'Submitting…';
-
   try {
     const res = await api('/api/shop/gcash-submit', { packId: currentGcashPack, refNo });
     toast(res.message || 'Payment submitted!');
@@ -1063,12 +1117,10 @@ async function loadAdminGcash() {
     const data = await api('/api/admin/gcash-requests');
     const el = document.getElementById('gcashAdminList');
     if (!el) return;
-
     if (!data.pending.length) {
       el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
       return;
     }
-
     el.innerHTML = data.pending.map(item => `
       <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
         <div>
@@ -1106,28 +1158,6 @@ function fightBtn(w,i){const cur=S.world==w,pr=w==2?S.b2:S.boss;if(i>pr)return '
 
 function retreat(){stopAg();S.over=1;S.tgt=null;S.scr='forge';render()}
 
-function render(){
-  if(S.scr!='mini')mgStop();
-  if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
-  const a=document.getElementById('app');st();
-  const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
-  const h=M();
-  document.getElementById('tbar').innerHTML=head();
-  const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);
-  nav.innerHTML=show?navH():'';
-  nav.style.display=show?'':'none';
-  const top=RL.scr!=S.scr;
-  RL.scr=S.scr;
-  a.innerHTML=h;
-  if(top)a.scrollTop=0;
-  if(S.scr=='mini')mgInit();
-  if(S.scr=='cut')startCut();
-  if(S.scr=='map')centerMap();
-  if(S.scr=='friends'&&USER&&USER.caps.social)frStart();
-  if(S.scr=='news')loadTop();
-  if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
-  if(S.scr=='admin'&&AD.tab=='gcash')loadAdminGcash();
-}
 function fightH(){
   const b = cb();
   if(!b) return '<div class="box"><p>No boss selected.</p></div>';
@@ -1184,36 +1214,34 @@ function fightH(){
     </div>
   `;
 }
+
+function render(){
+  if(S.scr!='mini')mgStop();
+  if(S.scr!='cut'){CUTT.forEach(clearTimeout);CUTT=[]}
+  const a=document.getElementById('app');st();
+  const M={home:homeH,map:mapH,cut:cutH,minis:minisH,mini:miniH,minires:minresH,end2:end2H,admin:adminH,settings:settingsH,shop:shopH,forge:forgeH,fight:fightH,lobby:lobbyH,wait:waitH,tower:towerH,trew:trewH,tover:toverH,over:overH,news:newsH,friends:friendsH,help:helpH,reward:rewardH}[S.scr]||rewardH;
+  const h=M();
+  document.getElementById('tbar').innerHTML=head();
+  const nav=document.getElementById('nav'),show=NAVS.includes(S.scr);
+  nav.innerHTML=show?navH():'';
+  nav.style.display=show?'':'none';
+  const top=RL.scr!=S.scr;
+  RL.scr=S.scr;
+  a.innerHTML=h;
+  if(top)a.scrollTop=0;
+  if(S.scr=='mini')mgInit();
+  if(S.scr=='cut')startCut();
+  if(S.scr=='map')centerMap();
+  if(S.scr=='friends'&&USER&&USER.caps.social)frStart();
+  if(S.scr=='news')loadTop();
+  if(S.scr=='shop'&&S.shopc=='g'&&!SHOPINFO)loadShop();
+  if(S.scr=='admin'&&AD.tab=='gcash')loadAdminGcash();
+}
+
 const RL={scr:''};
 AD.cust.world=1;AD.q='';
 
 S=fresh();S.scr='home';applySet();document.getElementById('ver').textContent='v'+VERSION;render();connect();
 </script>
-
-<div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
-  <div class="dlg" style="text-align:center;">
-    <h2 style="color:var(--acc); margin-bottom:4px;">Pay with GCash</h2>
-    
-    <div style="background:var(--bg2); border:3px solid var(--px); padding:10px; margin:8px 0; text-align:center;">
-      <p style="margin:2px 0; font-size:0.85rem;">Scan QR to send <b id="gcashPrice" style="color:var(--good);">₱0</b></p>
-      
-      <img src="/gcash-qr.png" alt="GCash QR Code" style="width:180px; height:auto; border:3px solid var(--px); margin:8px auto; display:block; background:#fff;">
-      
-      <p style="margin:2px 0; font-size:0.8rem; color:var(--tx);">Account Name: <b>NI******S J** G.</b></p>
-      <p style="margin:2px 0; font-size:0.75rem; color:var(--mut);">Mobile: <b>0962 262 ****</b></p>
-    </div>
-
-    <label style="text-align:left; font-size:0.8rem; display:block; margin-bottom:4px;">
-      Paste GCash Reference No. (8-13 digits):
-      <input type="text" id="gcashRefInput" maxlength="13" placeholder="e.g. 1001234567890" style="margin-top:4px;">
-    </label>
-    
-    <div id="gcashErr" class="err" style="margin-top:4px;"></div>
-
-    <button class="go" onclick="submitGcashModal()" style="margin-top:6px;">Submit Payment</button>
-    <button onclick="closeGcashModal()" style="margin-top:6px; width:100%; text-align:center;">Cancel</button>
-  </div>
-</div>
-
 </body>
 </html>
