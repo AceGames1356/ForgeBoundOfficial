@@ -1098,7 +1098,7 @@ function closeGcashModal() {
 async function submitGcashModal() {
   const refNo = document.getElementById('gcashRefInput').value.trim();
   const errEl = document.getElementById('gcashErr');
-  if (!/^\d{8,13}\$/.test(refNo)) {
+  if (!/^\d{8,13}$/.test(refNo)) {
     errEl.textContent = 'Enter a valid GCash Reference Number (8-13 digits).';
     return;
   }
@@ -1111,33 +1111,6 @@ async function submitGcashModal() {
     errEl.textContent = err.message || 'Submission failed.';
   }
 }
-
-async function loadAdminGcash() {
-  try {
-    const data = await api('/api/admin/gcash-requests');
-    const el = document.getElementById('gcashAdminList');
-    if (!el) return;
-    if (!data.pending.length) {
-      el.innerHTML = '<p class="fine">No pending GCash requests.</p>';
-      return;
-    }
-    el.innerHTML = data.pending.map(item => `
-      <div class="nw" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <div>
-          <b>@${esc(item.user)}</b> · Ref: <span style="color:var(--acc);">${esc(item.ref)}</span><br>
-          <small>${item.gems} Gems ($${(item.cents / 100).toFixed(2)})</small>
-        </div>
-        <div class="btnrow">
-          <button class="go sm" onclick="confirmGcash('${item.id}')">Confirm</button>
-          <button class="sm" onclick="rejectGcash('${item.id}')">Reject</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    toast(e.message);
-  }
-}
-
 async function confirmGcash(requestId) {
   try {
     const res = await api('/api/admin/gcash-confirm', { requestId });
