@@ -1059,13 +1059,28 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Set default player if missing
-  if (!AD.who && AD.users && AD.users.length) {
-    AD.who = AD.users[0].u || AD.users[0].username || '';
+  // 1. Fetch user list if empty
+  if (!AD.users || !AD.users.length) {
+    try {
+      const uRes = await api('/api/admin/users');
+      AD.users = uRes.users || uRes || [];
+    } catch (e) {}
+  }
+
+  // 2. Pick first player if AD.who is empty or invalid
+  if ((!AD.who || AD.who === '') && AD.users && AD.users.length > 0) {
+    const p = AD.users[0];
+    AD.who = typeof p === 'string' ? p : (p.u || p.username || p.id || '');
+  }
+
+  // 3. Fallback to active logged-in user
+  if (!AD.who && typeof S !== 'undefined' && S.u) {
+    AD.who = S.u;
   }
 
   try {
-    const res = await api('/api/admin/gcash-pending');
+    // Send API call passing AD.who explicitly
+    const res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(AD.who || '')}`);
     const items = res.items || res;
 
     if (!Array.isArray(items) || !items.length) {
@@ -1084,7 +1099,11 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
       </div>
     `).join('');
   } catch (e) {
-    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
+    // Display exact active player key so we can debug instantly
+    el.innerHTML = `
+      <p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>
+      <p class="fine" style="opacity:0.7;">Active player key (AD.who): "<b>${esc(AD.who)}</b>"</p>
+    `;
   }
 }
 function adminH(){
