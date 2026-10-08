@@ -300,6 +300,9 @@ button.sm{padding:6px 12px;width:auto!important;font-size:.85rem;flex:none}
 .gcrow{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg2);border:2px solid var(--line);border-radius:8px;padding:8px 10px}
 .gcinfo{display:flex;flex-direction:column;min-width:0;flex:1 1 160px;word-break:break-all}
 .gcbtn{display:flex;gap:6px}.gcbtn button{padding:5px 12px;font-size:.85rem}
+.boss>.slash,.boss>.spark{animation:none;opacity:0}
+.boss.hit>.slash{animation:slash .3s steps(3) .25s both}
+.boss.hit>.spark{animation:sp .3s steps(3) .27s both}
 </style></head><body><div id="shell"><div id="tbar"></div><main id="app"></main><nav id="nav"></nav></div><div id="modal"></div><div id="ver"></div>
 
 <div id="gcashModal" class="ov" style="display:none;" onclick="if(event.target===this)closeGcashModal()">
@@ -554,7 +557,7 @@ if(Math.random()<s.crit){d*=2;t.push('crit')}if(s.e==b.w){d*=1.8;t.push('weaknes
 d=Math.round(d);S.bhp=Math.max(0,S.bhp-d);
 const rec=Game.recoil(b.r,s.def,b.fl);if(s.life){const hl=Math.min(Math.round(d*s.life),Math.floor(rec*.6));if(hl>0){S.hp=Math.min(MX(),S.hp+hl);setTimeout(sfx.heal,220)}}S.hp-=rec;S.n++;S.last={d,rec,t:t.length>0};
 S.log.unshift(`You hit for ${d}${t.length?' ('+t.join(', ')+')':''}. Recoil: you take ${rec}.`);
-sfx.swing();S.cd=true;S.fx=1;render();S.fx=0;if(d>0)(t.length?sfx.crit:sfx.hit)();setTimeout(sfx.hurt,120);
+sfx.swing();S.cd=true;S.hitfx=1;render();S.hitfx=0;if(d>0)(t.length?sfx.crit:sfx.hit)();setTimeout(sfx.hurt,120);
 if(S.bhp<=0){S.over=1;stopAg();setTimeout(win,900);return}if(S.hp<=0){loseFight(b);return}
 setTimeout(()=>{S.cd=false;if(S.scr=='fight')render()},Math.max(650,1000/s.spd))}
 function loseFight(b){if(S.over)return;S.over=1;stopAg();S.cd=true;setTimeout(()=>{const f=1-S.bhp/b.hp;S.gain=Math.round(bcoin(b)*.4*f);S.coins+=S.gain;S.gdia=b.w2?Math.round(b.dia*.3*f):0;S.dia+=S.gdia;save();S.scr='over';sfx.lose();render()},900)}
@@ -565,7 +568,7 @@ S.agT=setTimeout(()=>{if(S.scr!='fight'||!S.ag||S.over)return;agHit(b);if(S.scr=
 function agHit(b){const s=st(),g=Date.now()<S.ag.guard,dm=Math.max(1,Math.round(Game.recoil(b.aggr.pw,s.def,b.fl)*(g?.3:1)));S.hp-=dm;
 S.log.unshift(g?`You guard ${b.n}'s attack and take ${dm}.`:`${b.n} strikes you for ${dm}!`);(g?sfx.block:sfx.hurt)();if(S.hp<=0){S.hp=0;fupd();loseFight(b)}else fupd()}
 function guard(){if(!S.ag||S.over||Date.now()<S.ag.gcd)return;S.ag.guard=Date.now()+900;S.ag.gcd=Date.now()+1700;sfx.guard();fupd();setTimeout(fupd,1750)}
-function retreat(){if(S.over)return;stopAg();S.over=1;S.cd=false;S.fx=0;S.last=null;S.tgt=null;S.scr='forge';sfx.deny&&sfx.deny();render()}
+function retreat(){if(S.over)return;stopAg();S.over=1;S.cd=false;S.hitfx=0;S.last=null;S.tgt=null;S.scr='forge';sfx.deny&&sfx.deny();render()}
 function fupd(){if(S.scr=='fight')render()}
 
 function take(id){sfx.pick(P[id].t);S.owned.push(id);advance()}
@@ -765,7 +768,7 @@ function cb(){return bossAt(S.world,S.tgt?S.tgt.i:prog())}
 function isRep(){return !!S.tgt&&S.tgt.i<prog()}
 function bspr(b,sz){return b.w2?sprG(w2g(b.i),sz,b.n):spr(b.i,sz)}
 function bcoin(b){return b.w2?b.coin:BOSS_COIN[b.i]}
-function start(i){const nx=prog();S.tgt={i:i==null?nx:i};const b=cb();if(!b){S.tgt=null;return}stopAg();S.bhp=b.hp;S.hp=MX();S.log=['The '+b.n+' stirs.'+(isRep()?' (Repeat fight: half rewards)':'')];S.scr='fight';S.cd=false;S.fx=0;S.last=null;S.over=0;if(b.aggr)startAg(b);render()}
+function start(i){const nx=prog();S.tgt={i:i==null?nx:i};const b=cb();if(!b){S.tgt=null;return}stopAg();S.bhp=b.hp;S.hp=MX();S.log=['The '+b.n+' stirs.'+(isRep()?' (Repeat fight: half rewards)':'')];S.scr='fight';S.cd=false;S.hitfx=0;S.last=null;S.over=0;if(b.aggr)startAg(b);render()}
 function win(){const b=cb(),rep=isRep();sfx.win();stopAg();S.gain=Math.round(bcoin(b)*(rep?.5:1));S.coins+=S.gain;S.gdia=b.w2?Math.round(b.dia*(rep?.5:1)):0;S.dia+=S.gdia;
 S.rew=(b.w2?Game.dropPool2(b.i,S.owned):Game.dropPool(b.i,S.owned)).map(id=>P[id]);save();setTimeout(()=>sfx.reveal(S.rew.reduce((m,p)=>Math.max(m,p.t),0)),500);S.scr='reward';render()}
 function advance(){if(isRep()){S.tgt=null;S.scr='forge';save();render();return}S.tgt=null;
@@ -1187,12 +1190,12 @@ function fightH(){
 
       <div class="bt-stage ${b.aggr ? 'tele-on' : ''}">
         <div class="bt-tele ${S.ag && S.ag.tele ? 'on' : ''}">WARNING: BOSS IS ATTACKING!</div>
-        <div id="tboss" class="boss ${S.fx ? 'hit' : ''}">
-          <div class="slash"></div>
-          <div class="spark"></div>
+        <div id="tboss" class="boss ${S.hitfx ? 'hit' : ''}">
+          <div class="slash ${S.fx==='rainbow' ? 'rb' : ''}" style="--sc:${fxCol() || EC[s.e] || EC.none}"></div>
+          <div class="spark" style="--sc:${fxCol() || EC[s.e] || EC.none}"></div>
           ${bspr(b, 140)}
         </div>
-        <div class="sw ${S.fx ? 'go' : ''}">${svg(null, '0 0 32 66', 50, 100)}</div>
+        <div class="sw ${S.hitfx ? 'go' : ''}">${svg(null, '0 0 32 66', 50, 100)}</div>
         ${S.last ? `<div class="fl">-${S.last.d}</div>` : ''}
         <div class="bt-ev">
           ${S.log.slice(0, 2).map(x => `<div>${esc(x)}</div>`).join('')}
