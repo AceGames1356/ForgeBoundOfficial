@@ -1060,20 +1060,44 @@ async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
-  // Grab valid player string from state or active user
-  const activeWho = AD.who || (typeof S !== 'undefined' && S.u) || '';
-
-  try {
-    // Try GET/POST request through core api()
-    let res;
+  // 1. Fetch valid user list if empty or uninitialized
+  if (!AD.users || !AD.users.length) {
     try {
-      res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(activeWho)}`);
-    } catch(err) {
-      // Fallback: If your backend api helper uses POST/payload
-      res = await api('/api/admin/gcash-pending', { who: activeWho });
-    }
+      const uRes = await api('/api/admin/users');
+      AD.users = uRes.users || uRes || [];
+    } catch (e) {}
+  }
 
+  // 2. Ensure AD.who is set to a REAL existing player from AD.users
+  if (AD.users && AD.users.length > 0) {
+    const validUser = AD.users.find(x => {
+      const uVal = typeof x === 'string' ? x : (x.u || x.username);
+      return uVal && uVal === AD.who;
+    });
+
+    // If AD.who is invalid or empty, default to the first valid registered player
+    if (!validUser) {
+      const first = AD.users[0];
+      AD.who = typeof first === 'string' ? first : (first.u || first.username || '');
+    }
+  }
+
+  // 3. Fallback to active player state if AD.who is still empty
+  if (!AD.who && typeof S !== 'undefined' && S.u) {
+    AD.who = S.u;
+  }
+
+  // If no user exists at all, stop here gracefully
+  if (!AD.who) {
+    el.innerHTML = '<p class="fine">No registered players found in system.</p>';
+    return;
+  }
+
+  // 4. Request pending payments with verified player target
+  try {
+    const res = await api('/api/admin/gcash-pending', { who: AD.who });
     const items = res.items || res;
+
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
