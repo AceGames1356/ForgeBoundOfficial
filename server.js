@@ -1,4 +1,3 @@
-
 'use strict';
 // Forgebound server: accounts (email + age), saves, friends, chat, trading, gems shop, news, co-op tower.
 // Connected to permanent Supabase PostgreSQL cloud storage using native JSONB.
@@ -301,10 +300,13 @@ const caps = (rec, u) => { const a = ageOf(rec.dob), v = isAdmin(u) || rec.verif
 const userInfo = (rec, u) => ({ username: u, name: rec.name, verified: !!(rec.verified || isAdmin(u)), needsInfo: !isAdmin(u) && (!rec.email || !rec.dob), age: ageOf(rec.dob), caps: caps(rec, u) });
 async function sendMail(to, subject, text) {
   if (CFG.RESEND) {
-    try { const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: CFG.FROM, to: [to], subject, text }) }); return r.ok; }
-    catch (e) { return false; }
+    try {
+      const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + CFG.RESEND, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: CFG.FROM, to: [to], subject, text }) });
+      if (!r.ok) { const t = await r.text().catch(() => ''); console.error('[mail:resend] FAILED', r.status, 'from=' + CFG.FROM, 'to=' + to, t); }
+      return r.ok;
+    } catch (e) { console.error('[mail:resend] network error', e.message); return false; }
   }
-  console.log('[mail:dev] to', to, '|', subject, '|', text); return null;
+  console.log('[mail:dev] RESEND_API_KEY is not set. to', to, '|', subject, '|', text); return null;
 }
 async function sendCode(rec, u) {
   const code = String(crypto.randomInt(100000, 1000000));
