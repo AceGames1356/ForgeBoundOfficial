@@ -1056,24 +1056,32 @@ const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNew
   render();
 }
 
-async function loadAdminGcash() {
+async function loadAdminGcash(){
   const el = document.getElementById('gcashAdminList');
-  if (!el) return;
+  if(!el) return;
 
-  // Make sure AD.who isn't empty if users exist
-  if ((!AD.who || AD.who === '') && AD.users && AD.users.length > 0) {
-    AD.who = AD.users[0].u || AD.users[0].id || AD.users[0].username;
+  // 1. Fetch user list if missing, or grab current user automatically
+  if(!AD.users || !AD.users.length){
+    try {
+      const uRes = await api('/api/admin/users');
+      AD.users = uRes.users || uRes || [];
+    } catch(e) {}
   }
 
-  if (!AD.who) {
-    el.innerHTML = '<p class="fine">Loading user data…</p>';
-    return;
+  // 2. Guarantee AD.who is set to a valid player username/ID
+  if((!AD.who || AD.who === '') && AD.users && AD.users.length > 0){
+    AD.who = AD.users[0].u || AD.users[0].username || AD.users[0].id;
+  }
+
+  // 3. Fallback to logged-in user if AD.who is still blank
+  if(!AD.who && typeof S !== 'undefined' && S.u){
+    AD.who = S.u;
   }
 
   try {
     const res = await api('/api/admin/gcash-pending');
     const items = res.items || res;
-    if (!Array.isArray(items) || !items.length) {
+    if(!Array.isArray(items) || !items.length){
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
     }
@@ -1088,7 +1096,7 @@ async function loadAdminGcash() {
         </div>
       </div>
     `).join('');
-  } catch (e) {
+  } catch(e) {
     el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
   }
 }
