@@ -1051,6 +1051,35 @@ const admVerify=()=>adm('/api/admin/verify',{username:AD.who},()=>`${AD.who} is 
 const admNews=()=>{const t=document.getElementById('nt').value,x=document.getElementById('nx').value;adm('/api/admin/news',{title:t,text:x},()=>'Announcement posted.').then(loadNews)};
 const admDelNews=id=>adm('/api/admin/news',{del:id},()=>'Deleted.').then(loadNews);
 
+  function adTab(t){
+  AD.tab = t;
+  render();
+}
+
+async function loadAdminGcash(){
+  const el = document.getElementById('gcashAdminList');
+  if(!el) return;
+  try {
+    const res = await api('/api/admin/gcash-pending');
+    const items = res.items || res;
+    if(!items || !items.length){
+      el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
+      return;
+    }
+    el.innerHTML = items.map(p => `
+      <div style="border-bottom:1px solid #444; padding:6px 0;">
+        <div><b>User:</b> ${esc(p.username || p.u || 'Unknown')}</div>
+        <div><b>Ref:</b> ${esc(p.refNo || p.ref)} | <b>Pack:</b> ${esc(p.packId || p.pack)}</div>
+        <div style="display:flex; gap:6px; margin-top:4px;">
+          <button onclick="approveGcash('${p.id}')">Approve</button>
+          <button onclick="rejectGcash('${p.id}')">Reject</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
+  }
+}
 function adminH(){
   const u=`<label>Player<select onchange="AD.who=this.value">${AD.users.map(x=>`<option value="${x.u}" ${x.u==AD.who?'selected':''}>${esc(x.name)} (${x.u})</option>`).join('')}</select></label>`;
   let b;
