@@ -1060,23 +1060,20 @@ async function loadAdminGcash() {
   const el = document.getElementById('gcashAdminList');
   if (!el) return;
 
+  // Grab valid player string from state or active user
+  const activeWho = AD.who || (typeof S !== 'undefined' && S.u) || '';
+
   try {
-    // 1. Get token or auth headers if your app uses them
-    const token = localStorage.getItem('token') || localStorage.getItem('auth') || '';
-    
-    // 2. Direct fetch without passing any 'who' payload
-    const res = await fetch('/api/admin/gcash-pending', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    });
+    // Try GET/POST request through core api()
+    let res;
+    try {
+      res = await api(`/api/admin/gcash-pending?who=${encodeURIComponent(activeWho)}`);
+    } catch(err) {
+      // Fallback: If your backend api helper uses POST/payload
+      res = await api('/api/admin/gcash-pending', { who: activeWho });
+    }
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Failed to load GCash list');
-
-    const items = data.items || data;
+    const items = res.items || res;
     if (!Array.isArray(items) || !items.length) {
       el.innerHTML = '<p class="fine">No pending GCash payments.</p>';
       return;
@@ -1093,7 +1090,7 @@ async function loadAdminGcash() {
       </div>
     `).join('');
   } catch (e) {
-    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load')}</p>`;
+    el.innerHTML = `<p class="fine" style="color:red">Error: ${esc(e.message || 'Failed to load GCash list')}</p>`;
   }
 }
 function adminH(){
